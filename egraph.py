@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import NamedTuple, Callable, List, Union, Literal, FrozenSet
 
-from minilisp import Args, Ast, FreeAst, Symbol
+from typing import NamedTuple, FrozenSet
+
+from minilisp import FreeAst
 
 
 class Rule(NamedTuple):
