@@ -34,7 +34,8 @@ class Ast(NamedTuple):
     args: Tuple[AstArgs, ...]
 
     @staticmethod
-    def extract_var_helper(ast: Ast, to_symbol_table: Dict[str, Symbol],
+    def extract_var_helper(ast: Ast,
+                           to_symbol_table: Dict[str, Symbol],
                            hole_prefix: Optional[str]) -> Dict[str, Symbol]:
         for arg in ast.args:
             if isinstance(arg, str):
