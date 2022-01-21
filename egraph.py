@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import NamedTuple, FrozenSet
 
-from minilisp import FreeAst
+from archive.minilisp import FreeAst
 
 
 class Rule(NamedTuple):

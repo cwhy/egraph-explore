@@ -13,7 +13,9 @@ class PartialAst(NamedTuple):
     def __repr__(self):
         return repr(self.op) + "\n" + "\n".join(display_ast_helper(self, ''))
 
+
 Args = Union[int, float, BoundedSymbol, PartialAst]
+
 
 class PartialProgram(NamedTuple):
     partial_ast: PartialAst
@@ -50,10 +52,7 @@ def parse_partial(s: str) -> PartialProgram:
 
 
 def match(ast: Ast, to_match: PartialAst) -> Optional[BoundTable]:
-    print("**************comparing*************")
-    print(ast)
-    print(to_match)
-    print("************************************")
+    op_match = False
     if ast.op != to_match.op:
         # TODO logic is still wrong here
         return None
