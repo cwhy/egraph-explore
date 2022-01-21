@@ -43,7 +43,7 @@ def tree_display_helper(tree: TF, prefix: str, tree_type: Type[TF]) -> str:
         if isinstance(arg, tree_type):
             yield prefix + pointer + str(arg.args[0])
             extension = graph_branch if pointer == graph_tee else graph_space
-            yield prefix + extension + "╽"
+            # yield prefix + extension + "╽"
             yield from tree_display_helper(arg, prefix + extension, tree_type)
         else:
             yield prefix + pointer + str(arg)

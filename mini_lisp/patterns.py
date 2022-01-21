@@ -30,7 +30,7 @@ class PartialProgram(NamedTuple):
 
     @property
     def display(self):
-        return f"{self.partial_ast.display}\n , where {self.symbols}"
+        return f"{self.partial_ast.display}\n, where {self.symbols}"
 
     def __repr__(self):
         return self.display

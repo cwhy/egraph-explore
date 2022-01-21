@@ -21,6 +21,7 @@ example_partial = "(/ (^ (* (+ 1 ?y 3) ?x 4) (- 2)) 2)"
 print(PartialProgram.parse(example_partial).display)
 
 pattern = PartialProgram.parse("(* 1 ?x)")
+print(pattern.display)
 source = parse("(/ (^ (* (+ 1 2 3) x 4) (* 1 (- 2))) (* 1 2))")
 print(source.display)
 result = match(source, pattern.partial_ast)
