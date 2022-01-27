@@ -1,4 +1,4 @@
-from typing import NamedTuple, Literal
+from typing import NamedTuple, Literal, List, FrozenSet
 
 from mini_lisp.core import Symbols, parse
 from mini_lisp.core_types import Symbol
@@ -12,7 +12,6 @@ class Rule(NamedTuple):
     l: PartialAst
     r: PartialAst
     symbols: Symbols
-    type: RuleType
 
     @property
     def display(self):
@@ -22,8 +21,7 @@ class Rule(NamedTuple):
         return self.display
 
     @classmethod
-    def parse(cls, l: str, r: str,
-              rule_type: RuleType = 'Rewrite') -> 'Rule':
+    def parse(cls, l: str, r: str) -> 'Rule':
         ast_l = parse(l)
         ast_r = parse(r)
         common_vars = ast_l.get_symbols().to_symbol.keys() & ast_r.get_symbols().to_symbol.keys()
@@ -33,17 +31,23 @@ class Rule(NamedTuple):
         return Rule(
             l=ast_l.unfill(symbols, PartialAst),
             r=ast_r.unfill(symbols, PartialAst),
-            symbols=symbols,
-            type=rule_type
+            symbols=symbols
         )
 
 
-rule = Rule.parse('(* a b)', '(* b a)')
-print(rule)
-rule = Rule.parse('(* 1 a)', '(* a)')
-print(rule)
-rule = Rule.parse('(* a a)', '(^ a 2)')
-print(rule)
-rule = Rule.parse('(+ (* a c) (* a d))', '(* a (+ c d))')
-print(rule)
+# Examples:
+# """
+# (+ x 0) -> x
+# (+ x y z) == (+ y z x)
+# """
 
+def parse_rules(rules_str: str) -> FrozenSet[Rule]:
+    rules = set()
+    for row in rules_str.split('\n'):
+        if "->" in row:
+            rules.add(Rule.parse(*row.split('->')))
+        elif "==" in row:
+            eq_rules = row.split('==')
+            rules.add(Rule.parse(*eq_rules))
+            rules.add(Rule.parse(*reversed(row.split('=='))))
+    return frozenset(rules)

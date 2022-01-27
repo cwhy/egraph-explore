@@ -1,27 +1,26 @@
 from __future__ import annotations
 
-from typing import NamedTuple, Union, Tuple, Type, TypeVar, FrozenSet, List, Optional
+from typing import NamedTuple, Union, Tuple, Type, TypeVar, FrozenSet, List, Optional, Literal
 
-from mini_lisp.core import Symbols, Ast, parse
-from mini_lisp.core_types import Symbol
+from mini_lisp.core import Symbols, Ast, parse, AstArgs
+from mini_lisp.core_types import Symbol, Variable, AstLeaf, AstNode
 from mini_lisp.program import FreeAst, Program
 from mini_lisp.tree_utils import tree_display, tree_replace
 
-T = TypeVar("T")
-
 
 class PartialAst(NamedTuple):
-    args: Tuple[Union[int, float, str, Symbol, PartialAst], ...]
+    args: Tuple[AstLeaf, ...]
+    type: Literal["ast_parent"] = "ast_parent"
 
     @property
     def display(self):
         return tree_display(self, PartialAst)
 
-    def fill(self, symbols: Symbols) -> T:
-        return tree_replace(self, symbols.from_symbol, Symbol, PartialAst, Ast)
+    def fill(self, symbols: Symbols) -> AstNode[AstArgs]:
+        return tree_replace(self, symbols.from_symbol, Symbol, Ast)
 
-    def unfill(self, symbols: Symbols) -> T:
-        return tree_replace(self, symbols.to_symbol, str, PartialAst, FreeAst)
+    def unfill(self, symbols: Symbols) -> AstNode[AstArgs]:
+        return tree_replace(self, symbols.to_symbol, Variable, FreeAst)
 
 
 class PartialProgram(NamedTuple):
@@ -87,5 +86,3 @@ def match(ast: Ast, to_match: PartialAst) -> List[Symbols]:
         if isinstance(arg1, Ast):
             sym_list += match(arg1, to_match)
     return sym_list
-
-

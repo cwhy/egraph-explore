@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from typing import TypeVar, runtime_checkable, Protocol, Tuple, Union, NamedTuple
-
-T = TypeVar("T")
+from typing import TypeVar, runtime_checkable, Protocol, Tuple, Union, NamedTuple, Literal
 
 
 class Symbol(NamedTuple):
     index: int
+    type: Literal["symbol"] = "symbol"
 
     def __str__(self):
         if self.index == 0:
@@ -21,6 +20,33 @@ class Symbol(NamedTuple):
             return f"({self.index})"
 
 
+AstLeafType = Literal["float", "variable", "symbol"]
+
+
+class Float(NamedTuple):
+    value: float
+    type: Literal["float"] = "float"
+
+
+class Variable(NamedTuple):
+    name: str
+    type: Literal["variable"] = "variable"
+
+
 @runtime_checkable
-class AstType(Protocol[T]):
-    args: Tuple[Union[int, float, str, Symbol, T], ...]
+class AstLeaf(Protocol):
+    type: AstLeafType
+
+
+T = TypeVar("T", bound=AstLeaf)
+
+
+@runtime_checkable
+class AstParent(Protocol[T]):
+    args: Tuple[T, ...]
+    type: Literal["ast_parent"] = "ast_parent"
+
+
+TP = TypeVar("TP", bound=AstParent)
+
+AstNode = Union[T, AstParent[T]]

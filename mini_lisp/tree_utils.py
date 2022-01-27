@@ -1,39 +1,40 @@
 from __future__ import annotations
 
-from typing import Union, Dict, TypeVar, Type
+from typing import Union, Dict, TypeVar, Type, List, Callable, Tuple
 
-from mini_lisp.core_types import AstType, Symbol
+from mini_lisp.core_types import Symbol, AstLeaf, AstNode, AstParent, Variable, Float
 
-TF = TypeVar("TF", bound=AstType)
-TT = TypeVar("TT", bound=AstType)
-K = TypeVar("K", bound=Union[Symbol, str])
+J = TypeVar("J", bound=AstLeaf)
+K = TypeVar("K", bound=AstLeaf)
+V = TypeVar("V", bound=AstLeaf)
+D = TypeVar("D", bound=AstParent)
 
 
-def tree_replace(ast: TF,
-                 table: Dict[K, Union[Symbol, str]],
+def tree_replace(ast: AstNode[J],
+                 table: Dict[K, V],
                  key_type: Type[K],
-                 from_type: Type[TF],
-                 dest_type: Type[TT]) -> TT:
-    args = []
-    for arg in ast.args:
-        if isinstance(arg, int) or isinstance(arg, float):
-            args.append(arg)
-        elif isinstance(arg, key_type):
-            # if arg is not in free_table, just return it
-            args.append(table.get(arg, arg))
-        else:
-            assert isinstance(arg, from_type)
-            args.append(tree_replace(arg, table, key_type, from_type, dest_type))
-    return dest_type(args)
+                 dest_type: Type[D]) -> Union[D, J, V]:
+    if isinstance(ast, AstParent):
+        args: List[Union[J, V]] = []
+        for arg in ast.args:
+            args.append(tree_replace(arg, table, key_type, dest_type))
+        return dest_type(tuple(args))
+    elif isinstance(ast, key_type):
+        # if arg is not in table, just return it
+        return table.get(ast, ast)
+    else:
+        assert isinstance(ast, Float)
+        return ast
 
 
 graph_space = '   '
 graph_branch = '║  '
 graph_tee = '╟─ '
 graph_last = '╙─ '
+TF = TypeVar("TF", bound=AstLeaf)
 
 
-def tree_display(tree: TF, tree_type: Type[TF]) -> str:
+def tree_display(tree: AstNode[TF], tree_type: Type[AstNode[TF]]) -> str:
     return str(tree.args[0]) + "\n" + "\n".join(tree_display_helper(tree, "", tree_type))
 
 
