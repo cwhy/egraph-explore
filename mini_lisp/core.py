@@ -1,43 +1,46 @@
 from __future__ import annotations
 
-from typing import TypeVar, Tuple, Union, NamedTuple, Dict, Optional, Type, List, Literal, Protocol
+from abc import abstractmethod
+from typing import TypeVar, Tuple, Union, NamedTuple, Optional, Type, List, Literal, Protocol, ItemsView
 
-from mini_lisp.core_types import Symbol, AstLeaf, Float, Variable, AstNode
-from mini_lisp.tree_utils import tree_replace, tree_display
+from mini_lisp.core_types import Symbol, AstLeaf, Float, Variable, AstNode, AstParent
+from mini_lisp.tree_utils import tree_replace, tree_display, MyMapping
 
 
 class Symbols(NamedTuple):
-    to_symbol: Dict[AstLeaf, Symbol]
-    from_symbol: Dict[Symbol, AstLeaf]
+    to_symbol: MyMapping[AstLeaf, Symbol]
+    from_symbol: MyMapping[Symbol, AstLeaf]
 
     def __repr__(self):
         return " ┃ ".join(f"{s}: {i}" for i, s in self.to_symbol.items())
 
     @classmethod
-    def from_to_symbol(cls, to_symbol_table: Dict[AstLeaf, Symbol]) -> Symbols:
+    def from_to_symbol(cls, to_symbol_table: MyMapping[AstLeaf, Symbol]) -> Symbols:
         from_symbol_table = {}
         for key, value in to_symbol_table.items():
             from_symbol_table[value] = key
         return Symbols(to_symbol_table, from_symbol_table)
 
     @classmethod
-    def from_from_symbol(cls, from_symbol_table: Dict[Symbol, AstLeaf]) -> Symbols:
+    def from_from_symbol(cls, from_symbol_table: MyMapping[Symbol, AstLeaf]) -> Symbols:
         to_symbol_table = {}
         for key, value in from_symbol_table.items():
             to_symbol_table[value] = key
         return Symbols(to_symbol_table, from_symbol_table)
 
 
-class AstArgs(Protocol):
-    type: Literal["float", "variable"]
+class RawLeaves(Protocol):
+    @abstractmethod
+    @property
+    def type(self) -> Literal["float", "variable"]: ...
 
 
-T = TypeVar("T", bound=AstArgs)
+T = TypeVar("T", bound=RawLeaves)
 
 
-def extract_var_helper(node: AstNode[AstArgs],
-                       to_symbol_table: Dict[Variable, Symbol],
-                       hole_prefix: Optional[str]) -> Dict[Variable, Symbol]:
+def extract_var_helper(node: AstNode[RawLeaves],
+                       to_symbol_table: MyMapping[AstLeaf, Symbol],
+                       hole_prefix: Optional[str]) -> MyMapping[AstLeaf, Symbol]:
     if isinstance(node, Ast):
         for arg in node.args:
             return extract_var_helper(arg, to_symbol_table, hole_prefix)
@@ -50,13 +53,16 @@ def extract_var_helper(node: AstNode[AstArgs],
 
 
 class Ast(NamedTuple):
-    args: Tuple[AstArgs, ...]
+    args: Tuple[AstNode[RawLeaves], ...]
     type: Literal["ast_parent"] = "ast_parent"
 
     def get_symbols(self, hole_prefix: Optional[str] = None) -> Symbols:
-        return Symbols.from_to_symbol(extract_var_helper(self, {}, hole_prefix))
+        to_symbol: MyMapping[AstLeaf, Symbol] = extract_var_helper(self, {}, hole_prefix)
+        return Symbols.from_to_symbol(to_symbol)
 
-    def unfill(self, symbols: Symbols, target: Type[AstNode[T]]) -> AstNode[T]:
+    def unfill(self, symbols: Symbols, target: Type[AstParent[Union[T, Variable]]]) -> AstNode[Union[T, Variable]]:
+        # noinspection PyTypeChecker
+        # Because pycharm sucks
         return tree_replace(self, symbols.to_symbol, Variable, target)
 
     @property
@@ -68,7 +74,7 @@ def tokenize(s: str) -> List[str]:
     return s.replace("(", " ( ").replace(")", " ) ").split()
 
 
-def parse_tokens(tokens: List[str]) -> AstNode[AstArgs]:
+def parse_tokens(tokens: List[str]) -> AstNode[RawLeaves]:
     if len(tokens) == 0:
         raise Exception("There must be something inside the parentheses")
     elif len(tokens) == 1:
@@ -106,5 +112,5 @@ def parse_tokens(tokens: List[str]) -> AstNode[AstArgs]:
         return Ast(tuple(args))
 
 
-def parse(s: str) -> AstNode[AstArgs]:
+def parse(s: str) -> AstNode[RawLeaves]:
     return parse_tokens(tokenize(s))

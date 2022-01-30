@@ -1,32 +1,36 @@
 from __future__ import annotations
 
-from typing import NamedTuple, Type, Tuple, Literal, Protocol
+from abc import abstractmethod
+from typing import NamedTuple, Type, Tuple, Literal, Protocol, Union, TypeVar
 
-from mini_lisp.core import Symbols, Ast, parse, AstArgs
-from mini_lisp.core_types import Symbol, T, AstNode, Variable, Float
+from mini_lisp.core import Symbols, Ast, parse, RawLeaves
+from mini_lisp.core_types import Symbol, AstNode, Variable, Float, AstParent
 from mini_lisp.tree_utils import tree_display, tree_replace
 
-FreeAstNodeType = Literal["ast", "float", "symbol"]
+
+class FreeAstLeaves(Protocol):
+    @abstractmethod
+    @property
+    def type(self) -> Literal["float", "symbol"]: ...
 
 
-class FreeAstArgs(Protocol):
-    type: Literal["float", "symbol"]
+T = TypeVar("T", bound=FreeAstLeaves)
 
 
 class FreeAst(NamedTuple):
-    args: Tuple[FreeAstArgs, ...]
+    args: Tuple[AstNode[FreeAstLeaves], ...]
     type: Literal["ast_parent"] = "ast_parent"
 
     @property
     def display(self):
         return tree_display(self, FreeAst)
 
-    def fill(self, symbols: Symbols, target: Type[AstNode[T]]) -> AstNode[T]:
+    def fill(self, symbols: Symbols, target: Type[AstParent[Union[T, Symbol]]]) -> AstNode[Union[T, Symbol]]:
         return tree_replace(self, symbols.from_symbol, Symbol, target)
 
 
 class Program(NamedTuple):
-    free_ast: AstNode[FreeAstArgs]
+    free_ast: AstNode[FreeAstLeaves]
     symbols: Symbols
 
     @property
@@ -41,7 +45,7 @@ class Program(NamedTuple):
         return self.display
 
     @classmethod
-    def from_ast(cls, ast: AstNode[AstArgs]) -> Program:
+    def from_ast(cls, ast: Union[Ast, RawLeaves]) -> Program:
         if isinstance(ast, Variable):
             return cls(Symbol(0), Symbols.from_from_symbol({Symbol(0): ast}))
         elif isinstance(ast, Float):
@@ -49,6 +53,7 @@ class Program(NamedTuple):
         else:
             assert isinstance(ast, Ast)
             symbols = ast.get_symbols()
+            # Type check core dumps here
             free_ast = ast.unfill(symbols, FreeAst)
             return cls(free_ast, symbols)
 

@@ -1,21 +1,25 @@
 from __future__ import annotations
 
-from typing import Union, Dict, TypeVar, Type, List, Callable, Tuple
+from typing import Union, TypeVar, Type, List, Protocol, ItemsView, Iterator, Tuple, Mapping
 
-from mini_lisp.core_types import Symbol, AstLeaf, AstNode, AstParent, Variable, Float
+from mini_lisp.core_types import AstLeaf, AstNode, AstParent, Float
+
+MyMapping = Mapping
 
 J = TypeVar("J", bound=AstLeaf)
-K = TypeVar("K", bound=AstLeaf)
 V = TypeVar("V", bound=AstLeaf)
+E = TypeVar("E", bound=Union[Float, AstLeaf])
 D = TypeVar("D", bound=AstParent)
 
+Out = Union[V, E]
 
-def tree_replace(ast: AstNode[J],
-                 table: Dict[K, V],
-                 key_type: Type[K],
-                 dest_type: Type[D]) -> Union[D, J, V]:
+
+def tree_replace(ast: AstNode[E],
+                 table: MyMapping[Out, Out],
+                 key_type: Type[E],
+                 dest_type: Type[AstParent[Out]]) -> AstNode[Out]:
     if isinstance(ast, AstParent):
-        args: List[Union[J, V]] = []
+        args: List[AstNode[Out]] = []
         for arg in ast.args:
             args.append(tree_replace(arg, table, key_type, dest_type))
         return dest_type(tuple(args))

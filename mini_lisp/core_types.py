@@ -1,23 +1,24 @@
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import TypeVar, runtime_checkable, Protocol, Tuple, Union, NamedTuple, Literal
 
 
 class Symbol(NamedTuple):
-    index: int
+    i: int
     type: Literal["symbol"] = "symbol"
 
     def __str__(self):
-        if self.index == 0:
+        if self.i == 0:
             return chr(0x24EA)
-        elif self.index <= 20:
-            return chr(0x245f + self.index)
-        elif self.index <= 35:
-            return chr(0x323C + self.index)
-        elif self.index <= 50:
-            return chr(0x328D + self.index)
+        elif self.i <= 20:
+            return chr(0x245f + self.i)
+        elif self.i <= 35:
+            return chr(0x323C + self.i)
+        elif self.i <= 50:
+            return chr(0x328D + self.i)
         else:
-            return f"({self.index})"
+            return f"({self.i})"
 
 
 AstLeafType = Literal["float", "variable", "symbol"]
@@ -35,18 +36,26 @@ class Variable(NamedTuple):
 
 @runtime_checkable
 class AstLeaf(Protocol):
-    type: AstLeafType
+    @abstractmethod
+    @property
+    def type(self) -> AstLeafType: ...
 
 
-T = TypeVar("T", bound=AstLeaf)
+T = TypeVar("T", covariant=True, bound=AstLeaf)
 
 
 @runtime_checkable
 class AstParent(Protocol[T]):
-    args: Tuple[T, ...]
-    type: Literal["ast_parent"] = "ast_parent"
+    @abstractmethod
+    @property
+    def args(self) -> Tuple[Union[AstParent[T], T], ...]: ...
 
+    @abstractmethod
+    @property
+    def type(self) -> Literal["ast_parent"]: ...
 
-TP = TypeVar("TP", bound=AstParent)
+    def __new__(cls, args: Tuple[Union[AstParent[T], T], ...]) -> AstParent: ...
+
 
 AstNode = Union[T, AstParent[T]]
+
