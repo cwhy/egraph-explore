@@ -17,7 +17,7 @@ class Symbols(Generic[TN]):
     from_symbol: MyMapping[Symbol, TN]
 
     def __repr__(self):
-        return " ┃ ".join(f"{s}: {i}" for i, s in self.to_symbol.items())
+        return " ┃ ".join(f"{s}: {i.display}" for i, s in self.to_symbol.items())
 
     @classmethod
     def from_to_symbol(cls, to_symbol_table: MyMapping[TN, Symbol]) -> Symbols:
@@ -25,7 +25,6 @@ class Symbols(Generic[TN]):
         for key, value in to_symbol_table.items():
             from_symbol_table[value] = key
         return Symbols(to_symbol_table, from_symbol_table)
-
 
     @classmethod
     def from_from_symbol(cls, from_symbol_table: MyMapping[Symbol, TN]) -> Symbols:
@@ -36,9 +35,13 @@ class Symbols(Generic[TN]):
 
 
 class RawLeaves(Protocol):
-    @abstractmethod
     @property
+    @abstractmethod
     def type(self) -> Literal["float", "variable"]: ...
+
+    @property
+    @abstractmethod
+    def display(self) -> str: ...
 
 
 def extract_var_helper(node: AstNode[RawLeaves],
@@ -46,7 +49,8 @@ def extract_var_helper(node: AstNode[RawLeaves],
                        hole_prefix: Optional[str]) -> MyMapping[AstLeaf, Symbol]:
     if isinstance(node, Ast):
         for arg in node.args:
-            return extract_var_helper(arg, to_symbol_table, hole_prefix)
+            to_symbol_table = extract_var_helper(arg, to_symbol_table, hole_prefix)
+        return to_symbol_table
     elif isinstance(node, Variable):
         if hole_prefix is None or node.name.startswith(hole_prefix):
             return {**to_symbol_table, **{node: Symbol(len(to_symbol_table))}}
@@ -69,8 +73,8 @@ class Ast(NamedTuple):
         return tree_replace(self, symbols.to_symbol, Variable, target)
 
     @property
-    def display(self):
-        return tree_display(self, Ast)
+    def display(self) -> str:
+        return tree_display(self)
 
 
 def tokenize(s: str) -> List[str]:

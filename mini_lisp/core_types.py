@@ -8,6 +8,10 @@ class Symbol(NamedTuple):
     i: int
     type: Literal["symbol"] = "symbol"
 
+    @property
+    def display(self) -> str:
+        return str(self)
+
     def __str__(self):
         if self.i == 0:
             return chr(0x24EA)
@@ -28,17 +32,29 @@ class Float(NamedTuple):
     value: float
     type: Literal["float"] = "float"
 
+    @property
+    def display(self) -> str:
+        return f"{self.value:.2f}"
+
 
 class Variable(NamedTuple):
     name: str
     type: Literal["variable"] = "variable"
 
+    @property
+    def display(self) -> str:
+        return f"{self.name}"
+
 
 @runtime_checkable
 class AstLeaf(Protocol):
-    @abstractmethod
     @property
+    @abstractmethod
     def type(self) -> AstLeafType: ...
+
+    @property
+    @abstractmethod
+    def display(self) -> str: ...
 
 
 T = TypeVar("T", covariant=True, bound=AstLeaf)
@@ -46,16 +62,19 @@ T = TypeVar("T", covariant=True, bound=AstLeaf)
 
 @runtime_checkable
 class AstParent(Protocol[T]):
-    @abstractmethod
     @property
+    @abstractmethod
     def args(self) -> Tuple[Union[AstParent[T], T], ...]: ...
 
-    @abstractmethod
     @property
+    @abstractmethod
     def type(self) -> Literal["ast_parent"]: ...
 
     def __new__(cls, args: Tuple[Union[AstParent[T], T], ...]) -> AstParent: ...
 
+    @property
+    @abstractmethod
+    def display(self) -> str: ...
+
 
 AstNode = Union[T, AstParent[T]]
-

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Union, TypeVar, Type, List, Protocol, ItemsView, Iterator, Tuple, Mapping
+from typing import Union, TypeVar, Type, List, Protocol, ItemsView, Iterator, Tuple, Mapping, Generator
 
 from mini_lisp.core_types import AstLeaf, AstNode, AstParent, Float
 
@@ -35,20 +35,23 @@ graph_space = '   '
 graph_branch = '║  '
 graph_tee = '╟─ '
 graph_last = '╙─ '
-TF = TypeVar("TF", bound=AstLeaf)
+T = TypeVar("T", bound=AstLeaf)
 
 
-def tree_display(tree: AstNode[TF], tree_type: Type[AstNode[TF]]) -> str:
-    return str(tree.args[0]) + "\n" + "\n".join(tree_display_helper(tree, "", tree_type))
+def tree_display(tree: AstNode[T]) -> str:
+    if isinstance(tree, AstParent):
+        return tree.args[0].display + "\n" + "\n".join(tree_display_helper(tree, ""))
+    else:
+        return tree.display
 
 
-def tree_display_helper(tree: TF, prefix: str, tree_type: Type[TF]) -> str:
+def tree_display_helper(tree: AstParent, prefix: str) -> Generator[str, str, None]:
     pointers = [graph_tee] * (len(tree.args) - 2) + [graph_last]
     for pointer, arg in zip(pointers, tree.args[1:]):
-        if isinstance(arg, tree_type):
-            yield prefix + pointer + str(arg.args[0])
+        if isinstance(arg, AstParent):
+            yield prefix + pointer + arg.args[0].display
             extension = graph_branch if pointer == graph_tee else graph_space
             # yield prefix + extension + "╽"
-            yield from tree_display_helper(arg, prefix + extension, tree_type)
+            yield from tree_display_helper(arg, prefix + extension)
         else:
-            yield prefix + pointer + str(arg)
+            yield prefix + pointer + arg.display

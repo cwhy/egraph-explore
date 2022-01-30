@@ -9,9 +9,13 @@ from mini_lisp.tree_utils import tree_display, tree_replace
 
 
 class FreeAstLeaves(Protocol):
-    @abstractmethod
     @property
+    @abstractmethod
     def type(self) -> Literal["float", "symbol"]: ...
+
+    @property
+    @abstractmethod
+    def display(self) -> str: ...
 
 
 T = TypeVar("T", bound=AstLeaf)
@@ -22,8 +26,8 @@ class FreeAst(NamedTuple):
     type: Literal["ast_parent"] = "ast_parent"
 
     @property
-    def display(self):
-        return tree_display(self, FreeAst)
+    def display(self) -> str:
+        return tree_display(self)
 
     def fill(self, symbols: Symbols, target: Type[AstParent[Union[T, Symbol]]]) -> AstNode[Union[T, Symbol]]:
         return tree_replace(self, symbols.from_symbol, Symbol, target)
