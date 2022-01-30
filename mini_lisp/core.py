@@ -1,28 +1,34 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TypeVar, Tuple, Union, NamedTuple, Optional, Type, List, Literal, Protocol, ItemsView
+from dataclasses import dataclass
+from typing import TypeVar, Tuple, Union, NamedTuple, Optional, Type, List, Literal, Protocol, ItemsView, Generic
 
 from mini_lisp.core_types import Symbol, AstLeaf, Float, Variable, AstNode, AstParent
 from mini_lisp.tree_utils import tree_replace, tree_display, MyMapping
 
+T = TypeVar("T", bound=AstLeaf)
+TN = TypeVar("TN", bound=AstNode[AstLeaf])
 
-class Symbols(NamedTuple):
-    to_symbol: MyMapping[AstLeaf, Symbol]
-    from_symbol: MyMapping[Symbol, AstLeaf]
+
+@dataclass(frozen=True)
+class Symbols(Generic[TN]):
+    to_symbol: MyMapping[TN, Symbol]
+    from_symbol: MyMapping[Symbol, TN]
 
     def __repr__(self):
         return " ┃ ".join(f"{s}: {i}" for i, s in self.to_symbol.items())
 
     @classmethod
-    def from_to_symbol(cls, to_symbol_table: MyMapping[AstLeaf, Symbol]) -> Symbols:
+    def from_to_symbol(cls, to_symbol_table: MyMapping[TN, Symbol]) -> Symbols:
         from_symbol_table = {}
         for key, value in to_symbol_table.items():
             from_symbol_table[value] = key
         return Symbols(to_symbol_table, from_symbol_table)
 
+
     @classmethod
-    def from_from_symbol(cls, from_symbol_table: MyMapping[Symbol, AstLeaf]) -> Symbols:
+    def from_from_symbol(cls, from_symbol_table: MyMapping[Symbol, TN]) -> Symbols:
         to_symbol_table = {}
         for key, value in from_symbol_table.items():
             to_symbol_table[value] = key
@@ -33,9 +39,6 @@ class RawLeaves(Protocol):
     @abstractmethod
     @property
     def type(self) -> Literal["float", "variable"]: ...
-
-
-T = TypeVar("T", bound=RawLeaves)
 
 
 def extract_var_helper(node: AstNode[RawLeaves],
@@ -56,8 +59,8 @@ class Ast(NamedTuple):
     args: Tuple[AstNode[RawLeaves], ...]
     type: Literal["ast_parent"] = "ast_parent"
 
-    def get_symbols(self, hole_prefix: Optional[str] = None) -> Symbols:
-        to_symbol: MyMapping[AstLeaf, Symbol] = extract_var_helper(self, {}, hole_prefix)
+    def get_symbols(self, hole_prefix: Optional[str] = None) -> Symbols[AstLeaf]:
+        to_symbol = extract_var_helper(self, {}, hole_prefix)
         return Symbols.from_to_symbol(to_symbol)
 
     def unfill(self, symbols: Symbols, target: Type[AstParent[Union[T, Variable]]]) -> AstNode[Union[T, Variable]]:

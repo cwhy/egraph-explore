@@ -4,7 +4,7 @@ from abc import abstractmethod
 from typing import NamedTuple, Type, Tuple, Literal, Protocol, Union, TypeVar
 
 from mini_lisp.core import Symbols, Ast, parse, RawLeaves
-from mini_lisp.core_types import Symbol, AstNode, Variable, Float, AstParent
+from mini_lisp.core_types import Symbol, AstNode, Variable, Float, AstParent, AstLeaf
 from mini_lisp.tree_utils import tree_display, tree_replace
 
 
@@ -14,7 +14,7 @@ class FreeAstLeaves(Protocol):
     def type(self) -> Literal["float", "symbol"]: ...
 
 
-T = TypeVar("T", bound=FreeAstLeaves)
+T = TypeVar("T", bound=AstLeaf)
 
 
 class FreeAst(NamedTuple):
@@ -45,16 +45,20 @@ class Program(NamedTuple):
         return self.display
 
     @classmethod
-    def from_ast(cls, ast: Union[Ast, RawLeaves]) -> Program:
+    def from_ast(cls, ast: AstNode[RawLeaves]) -> Program:
         if isinstance(ast, Variable):
+            # noinspection PyTypeChecker
+            # cus Pycharm sucks
             return cls(Symbol(0), Symbols.from_from_symbol({Symbol(0): ast}))
         elif isinstance(ast, Float):
             return cls(ast, Symbols({}, {}))
         else:
             assert isinstance(ast, Ast)
             symbols = ast.get_symbols()
-            # Type check core dumps here
-            free_ast = ast.unfill(symbols, FreeAst)
+            # noinspection PyTypeChecker
+            # cus Pycharm sucks
+            # can't use ast.unfill here cus mypy sucks
+            free_ast = tree_replace(ast, symbols.to_symbol, Variable, FreeAst)
             return cls(free_ast, symbols)
 
     @classmethod

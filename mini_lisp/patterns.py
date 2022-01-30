@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from typing import NamedTuple, Union, Tuple, Type, TypeVar, FrozenSet, List, Optional, Literal
+from typing import NamedTuple, Tuple, FrozenSet, List, Optional, Literal, Dict
 
 from mini_lisp.core import Symbols, Ast, parse, RawLeaves
-from mini_lisp.core_types import Symbol, Variable, AstLeaf, AstNode
-from mini_lisp.program import FreeAst, Program
+from mini_lisp.core_types import Symbol, Variable, AstLeaf, AstNode, Float
+from mini_lisp.program import FreeAst, Program, FreeAstLeaves
 from mini_lisp.tree_utils import tree_display, tree_replace
 
 
 class PartialAst(NamedTuple):
-    args: Tuple[AstLeaf, ...]
+    args: Tuple[AstNode[AstLeaf], ...]
     type: Literal["ast_parent"] = "ast_parent"
 
     @property
@@ -19,12 +19,12 @@ class PartialAst(NamedTuple):
     def fill(self, symbols: Symbols) -> AstNode[RawLeaves]:
         return tree_replace(self, symbols.from_symbol, Symbol, Ast)
 
-    def unfill(self, symbols: Symbols) -> AstNode[RawLeaves]:
+    def unfill(self, symbols: Symbols) -> AstNode[FreeAstLeaves]:
         return tree_replace(self, symbols.to_symbol, Variable, FreeAst)
 
 
 class PartialProgram(NamedTuple):
-    partial_ast: PartialAst
+    partial_ast: AstNode[AstLeaf]
     symbols: Symbols
 
     @property
@@ -40,17 +40,39 @@ class PartialProgram(NamedTuple):
         rest_table = {k: v for k, v in program.symbols.to_symbol.items() if k not in keywords}
         match_symbols = Symbols.from_from_symbol(match_table)
         rest_symbols = Symbols.from_to_symbol(rest_table)
-        return cls(
-            partial_ast=program.free_ast.fill(match_symbols, PartialAst),
-            symbols=rest_symbols
-        )
+        if isinstance(program.free_ast, Variable):
+            # noinspection PyTypeChecker
+            # cus Pycharm sucks
+            return cls(Symbol(0), Symbols.from_from_symbol({Symbol(0): program.free_ast}))
+        elif isinstance(program.free_ast, Float):
+            return cls(program.free_ast, Symbols({}, {}))
+        else:
+            assert isinstance(program.free_ast, FreeAst)
+            # noinspection PyTypeChecker
+            # cus Pycharm sucks
+            partial_ast_node = program.free_ast.fill(match_symbols, PartialAst)
+            return cls(
+                partial_ast=partial_ast_node,
+                symbols=rest_symbols
+            )
 
     @classmethod
-    def from_ast(cls, ast: Ast) -> PartialProgram:
-        symbols = ast.get_symbols("?")
-        print(f"symbols: {symbols}")
-        partial_ast = ast.unfill(symbols, PartialAst)
-        return cls(partial_ast, symbols)
+    def from_ast(cls, ast: AstNode[RawLeaves]) -> PartialProgram:
+        if isinstance(ast, Variable):
+            if ast.name.startswith("?"):
+                # noinspection PyTypeChecker
+                # cus Pycharm sucks
+                return cls(Symbol(0), Symbols.from_from_symbol({Symbol(0): ast}))
+            else:
+                return cls(ast, Symbols({}, {}))
+        elif isinstance(ast, Float):
+            return cls(ast, Symbols({}, {}))
+        else:
+            assert isinstance(ast, Ast)
+            symbols = ast.get_symbols("?")
+            print(f"symbols: {symbols}")
+            partial_ast = ast.unfill(symbols, PartialAst)
+            return cls(partial_ast, symbols)
 
     @classmethod
     def parse(cls, s: str) -> PartialProgram:
@@ -58,7 +80,7 @@ class PartialProgram(NamedTuple):
 
 
 def match_node(tree_node: Ast, to_match: PartialAst) -> Optional[Symbols]:
-    new_table = {}
+    new_table: Dict[Symbol, AstNode[RawLeaves]] = {}
     for arg1, arg2 in zip(tree_node.args, to_match.args):
         if isinstance(arg2, PartialAst):
             if not isinstance(arg1, Ast):
