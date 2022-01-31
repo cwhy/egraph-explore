@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import NamedTuple, Tuple, FrozenSet, List, Optional, Literal, Dict
 
 from mini_lisp.core import Symbols, Ast, parse, RawLeaves
-from mini_lisp.core_types import Symbol, Variable, AstLeaf, AstNode, Float
+from mini_lisp.core_types import Symbol, Variable, AstLeaf, AstNode, Number
 from mini_lisp.program import FreeAst, Program, FreeAstLeaves
 from mini_lisp.tree_utils import tree_replace, tree_parent_display
 
@@ -44,7 +44,7 @@ class PartialProgram(NamedTuple):
             # noinspection PyTypeChecker
             # cus Pycharm sucks
             return cls(Symbol(0), Symbols.from_from_symbol({Symbol(0): program.free_ast}))
-        elif isinstance(program.free_ast, Float):
+        elif isinstance(program.free_ast, Number):
             return cls(program.free_ast, Symbols({}, {}))
         else:
             assert isinstance(program.free_ast, FreeAst)
@@ -65,7 +65,7 @@ class PartialProgram(NamedTuple):
                 return cls(Symbol(0), Symbols.from_from_symbol({Symbol(0): ast}))
             else:
                 return cls(ast, Symbols({}, {}))
-        elif isinstance(ast, Float):
+        elif isinstance(ast, Number):
             return cls(ast, Symbols({}, {}))
         else:
             assert isinstance(ast, Ast)

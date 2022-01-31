@@ -9,6 +9,13 @@ class Symbol(NamedTuple):
     type: Literal["symbol"] = "symbol"
 
     @property
+    def letter(self) -> str:
+        if self.i < 26:
+            return chr(97 + self.i)
+        else:
+            return f"var_{self.i}"
+
+    @property
     def display(self) -> str:
         return str(self) + " "
 
@@ -25,16 +32,30 @@ class Symbol(NamedTuple):
             return f"({self.i})"
 
 
-AstLeafType = Literal["float", "variable", "symbol"]
+AstLeafType = Literal["number", "variable", "symbol"]
 
 
-class Float(NamedTuple):
-    value: float
-    type: Literal["float"] = "float"
+class Number(NamedTuple):
+    value: Union[float, int]
+    type: Literal["number"] = "number"
+
+    @classmethod
+    def from_str(cls, token: str) -> Number:
+        try:
+            return cls(int(token))
+        except ValueError:
+            try:
+                return cls(float(token))
+            except ValueError as e:
+                raise e
 
     @property
     def display(self) -> str:
-        return f"{self.value:.2f}"
+        if isinstance(self.value, int):
+            return str(self.value)
+        else:
+            assert isinstance(self.value, float)
+            return f"{self.value:.2f}"
 
 
 class Variable(NamedTuple):

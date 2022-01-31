@@ -4,7 +4,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from typing import TypeVar, Tuple, Union, NamedTuple, Optional, Type, List, Literal, Protocol, ItemsView, Generic
 
-from mini_lisp.core_types import Symbol, AstLeaf, Float, Variable, AstNode, AstParent
+from mini_lisp.core_types import Symbol, AstLeaf, Number, Variable, AstNode, AstParent
 from mini_lisp.tree_utils import tree_replace, tree_display, MyMapping, tree_parent_display
 
 T = TypeVar("T", bound=AstLeaf)
@@ -15,6 +15,9 @@ TN = TypeVar("TN", bound=AstNode[AstLeaf])
 class Symbols(Generic[TN]):
     to_symbol: MyMapping[TN, Symbol]
     from_symbol: MyMapping[Symbol, TN]
+
+    def __hash__(self) -> int:
+        return hash(tuple(self.to_symbol.items()))
 
     def __repr__(self):
         return " ┃ ".join(f"{s.display}: {i.display}" for i, s in self.to_symbol.items())
@@ -37,7 +40,7 @@ class Symbols(Generic[TN]):
 class RawLeaves(Protocol):
     @property
     @abstractmethod
-    def type(self) -> Literal["float", "variable"]: ...
+    def type(self) -> Literal["number", "variable"]: ...
 
     @property
     @abstractmethod
@@ -55,7 +58,7 @@ def extract_var_helper(node: AstNode[RawLeaves],
         if hole_prefix is None or node.name.startswith(hole_prefix):
             return {**to_symbol_table, **{node: Symbol(len(to_symbol_table))}}
     else:
-        assert isinstance(node, Float)
+        assert isinstance(node, Number)
     return to_symbol_table
 
 
@@ -92,7 +95,7 @@ def parse_tokens(tokens: List[str]) -> AstNode[RawLeaves]:
     elif len(tokens) == 1:
         token = tokens[0]
         try:
-            return Float(float(token))
+            return Number.from_str(token)
         except ValueError:
             return Variable(token)
     else:

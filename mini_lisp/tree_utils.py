@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Union, TypeVar, Type, List, Protocol, ItemsView, Iterator, Tuple, Mapping, Generator
 
-from mini_lisp.core_types import AstLeaf, AstNode, AstParent, Float, AstLeafType
+from mini_lisp.core_types import AstLeaf, AstNode, AstParent, Number, AstLeafType, Symbol
 
 MyMapping = Mapping
 
 J = TypeVar("J", bound=AstLeaf)
 V = TypeVar("V", bound=AstLeaf)
-E = TypeVar("E", bound=Union[Float, AstLeaf])
+E = TypeVar("E", bound=Union[Number, AstLeaf])
 D = TypeVar("D", bound=AstParent)
 
 Out = Union[V, E]
@@ -27,7 +27,7 @@ def tree_replace(ast: AstNode[E],
         # if arg is not in table, just return it
         return table.get(ast, ast)
     else:
-        assert isinstance(ast, Float)
+        assert isinstance(ast, Number)
         return ast
 
 
@@ -60,3 +60,17 @@ def tree_display_helper(tree: AstParent, prefix: str) -> Generator[str, str, Non
             yield from tree_display_helper(arg, prefix + extension)
         else:
             yield prefix + pointer + arg.display
+
+
+def tree_display_short(tree: AstNode) -> str:
+    if isinstance(tree, AstParent):
+        args = " ".join(tree_display_short(arg) for arg in tree.args)
+        return f"({args})"
+    else:
+        assert isinstance(tree, AstLeaf)
+        if isinstance(tree, Symbol):
+            return tree.letter
+        elif isinstance(tree, Number):
+            return str(tree.value)
+        else:
+            return tree.display

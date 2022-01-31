@@ -3,10 +3,9 @@ from typing import NamedTuple, Literal, List, FrozenSet
 from mini_lisp.core import Symbols, parse, get_symbols
 from mini_lisp.core_types import Symbol, AstNode, AstLeaf, Variable
 from mini_lisp.patterns import PartialAst
-from mini_lisp.tree_utils import tree_replace
+from mini_lisp.tree_utils import tree_replace, tree_display_short
 
-RuleType = Literal['Rewrite', 'Equality']
-ops = frozenset({'+', '-', '*', '/', '^'})
+ops = frozenset(Variable(x) for x in {'+', '-', '*', '/', '^', '<<'})
 
 
 class Rule(NamedTuple):
@@ -16,10 +15,15 @@ class Rule(NamedTuple):
 
     @property
     def display(self):
-        return f"LHS: \n{self.l.display}\nRHS: \n{self.r.display}\n , where {self.symbols}"
+        symbol_str = f", where {self.symbols}\n" if len(self.symbols.to_symbol) != 0 else ""
+        return f"LHS: \n{self.l.display}\nRHS: \n{self.r.display}\n " + symbol_str
+
+    @property
+    def short_display(self) -> str:
+        return f"{tree_display_short(self.l)} -> {tree_display_short(self.r)}"
 
     def __repr__(self):
-        return self.display
+        return self.short_display
 
     @classmethod
     def parse(cls, l: str, r: str) -> 'Rule':
@@ -42,7 +46,7 @@ class Rule(NamedTuple):
 # (+ x y z) == (+ y z x)
 # """
 
-def parse_rules(rules_str: str) -> FrozenSet[Rule]:
+def parse_ruleset(rules_str: str) -> FrozenSet[Rule]:
     rules = set()
     for row in rules_str.split('\n'):
         if "->" in row:
