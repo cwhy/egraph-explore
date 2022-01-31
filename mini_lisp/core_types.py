@@ -10,9 +10,9 @@ class Symbol(NamedTuple):
 
     @property
     def display(self) -> str:
-        return str(self)
+        return str(self) + " "
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.i == 0:
             return chr(0x24EA)
         elif self.i <= 20:

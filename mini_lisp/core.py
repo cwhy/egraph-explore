@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import TypeVar, Tuple, Union, NamedTuple, Optional, Type, List, Literal, Protocol, ItemsView, Generic
 
 from mini_lisp.core_types import Symbol, AstLeaf, Float, Variable, AstNode, AstParent
-from mini_lisp.tree_utils import tree_replace, tree_display, MyMapping
+from mini_lisp.tree_utils import tree_replace, tree_display, MyMapping, tree_parent_display
 
 T = TypeVar("T", bound=AstLeaf)
 TN = TypeVar("TN", bound=AstNode[AstLeaf])
@@ -17,7 +17,7 @@ class Symbols(Generic[TN]):
     from_symbol: MyMapping[Symbol, TN]
 
     def __repr__(self):
-        return " ┃ ".join(f"{s}: {i.display}" for i, s in self.to_symbol.items())
+        return " ┃ ".join(f"{s.display}: {i.display}" for i, s in self.to_symbol.items())
 
     @classmethod
     def from_to_symbol(cls, to_symbol_table: MyMapping[TN, Symbol]) -> Symbols:
@@ -59,6 +59,11 @@ def extract_var_helper(node: AstNode[RawLeaves],
     return to_symbol_table
 
 
+def get_symbols(node: AstNode[RawLeaves], hole_prefix: Optional[str] = None) -> Symbols[AstLeaf]:
+    to_symbol = extract_var_helper(node, {}, hole_prefix)
+    return Symbols.from_to_symbol(to_symbol)
+
+
 class Ast(NamedTuple):
     args: Tuple[AstNode[RawLeaves], ...]
     type: Literal["ast_parent"] = "ast_parent"
@@ -74,7 +79,7 @@ class Ast(NamedTuple):
 
     @property
     def display(self) -> str:
-        return tree_display(self)
+        return tree_parent_display(self)
 
 
 def tokenize(s: str) -> List[str]:

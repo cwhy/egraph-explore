@@ -19,6 +19,7 @@ symbols = {Symbol(0): Variable('/'),
            Symbol(3): Variable('+'),
            Symbol(4): Variable('x'),
            Symbol(5): Variable('-')}
+
 print(parsed.display)
 all_symbols = parsed.get_symbols()
 print(all_symbols)
@@ -41,7 +42,7 @@ print(result)
 
 rule = Rule.parse('(* a b)', '(* b a)')
 print(rule)
-rule = Rule.parse('(* 1 a)', '(* a)')
+rule = Rule.parse('(* 1 a)', 'a')
 print(rule)
 rule = Rule.parse('(* a a)', '(^ a 2)')
 print(rule)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Union, TypeVar, Type, List, Protocol, ItemsView, Iterator, Tuple, Mapping, Generator
 
-from mini_lisp.core_types import AstLeaf, AstNode, AstParent, Float
+from mini_lisp.core_types import AstLeaf, AstNode, AstParent, Float, AstLeafType
 
 MyMapping = Mapping
 
@@ -35,14 +35,19 @@ graph_space = '   '
 graph_branch = '║  '
 graph_tee = '╟─ '
 graph_last = '╙─ '
-T = TypeVar("T", bound=AstLeaf)
 
 
-def tree_display(tree: AstNode[T]) -> str:
+def tree_display(tree: AstNode) -> str:
+    # if isinstance(tree, AstParent):
+    # recursive type.. sigh
     if isinstance(tree, AstParent):
-        return tree.args[0].display + "\n" + "\n".join(tree_display_helper(tree, ""))
+        return tree_parent_display(tree)
     else:
         return tree.display
+
+
+def tree_parent_display(tree: AstParent[AstLeaf]) -> str:
+    return tree.args[0].display + "\n" + "\n".join(tree_display_helper(tree, ""))
 
 
 def tree_display_helper(tree: AstParent, prefix: str) -> Generator[str, str, None]:

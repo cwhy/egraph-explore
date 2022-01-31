@@ -5,7 +5,7 @@ from typing import NamedTuple, Tuple, FrozenSet, List, Optional, Literal, Dict
 from mini_lisp.core import Symbols, Ast, parse, RawLeaves
 from mini_lisp.core_types import Symbol, Variable, AstLeaf, AstNode, Float
 from mini_lisp.program import FreeAst, Program, FreeAstLeaves
-from mini_lisp.tree_utils import tree_display, tree_replace
+from mini_lisp.tree_utils import tree_replace, tree_parent_display
 
 
 class PartialAst(NamedTuple):
@@ -14,7 +14,7 @@ class PartialAst(NamedTuple):
 
     @property
     def display(self):
-        return tree_display(self, PartialAst)
+        return tree_parent_display(self)
 
     def fill(self, symbols: Symbols) -> AstNode[RawLeaves]:
         return tree_replace(self, symbols.from_symbol, Symbol, Ast)
