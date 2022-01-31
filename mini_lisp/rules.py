@@ -45,8 +45,10 @@ class Rule(NamedTuple):
 # (+ x 0) -> x
 # (+ x y z) == (+ y z x)
 # """
+RuleSet = FrozenSet[Rule]
 
-def parse_ruleset(rules_str: str) -> FrozenSet[Rule]:
+
+def parse_ruleset(rules_str: str) -> RuleSet:
     rules = set()
     for row in rules_str.split('\n'):
         if "->" in row:
