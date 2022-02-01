@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Union, TypeVar, Type, List, Protocol, ItemsView, Iterator, Tuple, Mapping, Generator
+from typing import Union, TypeVar, Type, List, Protocol, ItemsView, Iterator, Tuple, Mapping, Generator, Callable
 
 from mini_lisp.core_types import AstLeaf, AstNode, AstParent, Number, AstLeafType, Symbol
 
@@ -8,16 +8,15 @@ MyMapping = Mapping
 
 J = TypeVar("J", bound=AstLeaf)
 V = TypeVar("V", bound=AstLeaf)
-E = TypeVar("E", bound=Union[Number, AstLeaf])
-D = TypeVar("D", bound=AstParent)
+E = TypeVar("E", bound=AstLeaf)
 
-Out = Union[V, E]
+Out = Union[AstLeaf, E]
 
 
-def tree_replace(ast: AstNode[E],
+def tree_replace(ast: AstNode,
                  table: MyMapping[Out, Out],
-                 key_type: Type[E],
-                 dest_type: Type[AstParent[Out]]) -> AstNode[Out]:
+                 key_type: Type[Out],
+                 dest_type: Callable[[Tuple[AstNode[Out], ...]], AstParent[Out]]) -> AstNode[Out]:
     if isinstance(ast, AstParent):
         args: List[AstNode[Out]] = []
         for arg in ast.args:

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Tuple, Union, NamedTuple, Optional, Type, List, Literal, Protocol, ItemsView, Generic
+from typing import TypeVar, Tuple, Union, NamedTuple, Optional, Type, List, Literal, Protocol, ItemsView, Generic, \
+    Callable
 
 from mini_lisp.core_types import Symbol, AstLeaf, Number, Variable, AstNode, AstParent
 from mini_lisp.tree_utils import tree_replace, tree_display, MyMapping, tree_parent_display
@@ -75,7 +76,7 @@ class Ast(NamedTuple):
         to_symbol = extract_var_helper(self, {}, hole_prefix)
         return Symbols.from_to_symbol(to_symbol)
 
-    def unfill(self, symbols: Symbols, target: Type[AstParent[Union[T, Variable]]]) -> AstNode[Union[T, Variable]]:
+    def unfill(self, symbols: Symbols, target: Callable[[Tuple[AstNode[T], ...]], AstParent[AstNode[T]]]) -> AstParent[T]:
         # noinspection PyTypeChecker
         # Because pycharm sucks
         return tree_replace(self, symbols.to_symbol, Variable, target)
