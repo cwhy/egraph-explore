@@ -1,24 +1,22 @@
 from __future__ import annotations
 
-from typing import Union, TypeVar, Type, List, Protocol, ItemsView, Iterator, Tuple, Mapping, Generator, Callable
+from typing import TypeVar, Mapping, Generator
 
-from mini_lisp.core_types import AstLeaf, AstNode, AstParent, Number, AstLeafType, Symbol
+from mini_lisp.core_types import AstLeaf, AstNode, AstParent, Number, Symbol
 
 MyMapping = Mapping
 
-J = TypeVar("J", bound=AstLeaf)
-V = TypeVar("V", bound=AstLeaf)
-E = TypeVar("E", bound=AstLeaf)
-
-Out = Union[AstLeaf, E]
+T = TypeVar("T")
 
 
-def tree_replace(ast: AstNode,
-                 table: MyMapping[Out, Out],
-                 key_type: Type[Out],
-                 dest_type: Callable[[Tuple[AstNode[Out], ...]], AstParent[Out]]) -> AstNode[Out]:
+# No types for you until mypy or pycharm gets better
+# I am too tired.
+def tree_replace(ast,
+                 table,
+                 key_type,
+                 dest_type):
     if isinstance(ast, AstParent):
-        args: List[AstNode[Out]] = []
+        args = []
         for arg in ast.args:
             args.append(tree_replace(arg, table, key_type, dest_type))
         return dest_type(tuple(args))

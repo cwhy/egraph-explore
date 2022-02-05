@@ -76,7 +76,7 @@ class Ast(NamedTuple):
         to_symbol = extract_var_helper(self, {}, hole_prefix)
         return Symbols.from_to_symbol(to_symbol)
 
-    def unfill(self, symbols: Symbols, target: Callable[[Tuple[AstNode[T], ...]], AstParent[AstNode[T]]]) -> AstParent[T]:
+    def unfill(self, symbols: Symbols, target: Type[AstParent[T]]) -> AstParent[T]:
         # noinspection PyTypeChecker
         # Because pycharm sucks
         return tree_replace(self, symbols.to_symbol, Variable, target)

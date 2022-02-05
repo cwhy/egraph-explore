@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import NamedTuple, Tuple, FrozenSet, List, Optional, Literal, Dict
 
 from mini_lisp.core import Symbols, Ast, parse, RawLeaves
-from mini_lisp.core_types import Symbol, Variable, AstLeaf, AstNode, Number
+from mini_lisp.core_types import Symbol, Variable, AstLeaf, AstNode, Number, AstParent
 from mini_lisp.program import FreeAst, Program, FreeAstLeaves
 from mini_lisp.tree_utils import tree_replace, tree_parent_display
 
@@ -79,11 +79,11 @@ class PartialProgram(NamedTuple):
         return cls.from_ast(parse(s))
 
 
-def match_node(tree_node: Ast, to_match: PartialAst) -> Optional[Symbols]:
+def match_node(tree_node: AstParent[RawLeaves], to_match: PartialAst) -> Optional[Symbols]:
     new_table: Dict[Symbol, AstNode[RawLeaves]] = {}
     for arg1, arg2 in zip(tree_node.args, to_match.args):
         if isinstance(arg2, PartialAst):
-            if not isinstance(arg1, Ast):
+            if not isinstance(arg1, AstParent):
                 return None
             else:
                 return match_node(arg1, arg2)
@@ -99,8 +99,11 @@ def match_node(tree_node: Ast, to_match: PartialAst) -> Optional[Symbols]:
     return Symbols.from_from_symbol(new_table)
 
 
-def match(ast: Ast, to_match: PartialAst) -> List[Symbols]:
+def match(ast: AstNode[RawLeaves], to_match: AstNode[AstLeaf]) -> List[Symbols]:
     sym_list = []
+    # too lazy to implement
+    # seem not related with egraphs
+    assert isinstance(ast, AstParent)
     res = match_node(ast, to_match)
     if res is not None:
         sym_list.append(res)

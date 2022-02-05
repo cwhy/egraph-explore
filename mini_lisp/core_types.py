@@ -67,6 +67,20 @@ class Variable(NamedTuple):
         return f"{self.name}"
 
 
+AT = TypeVar('AT', bound=str, covariant=True)
+
+
+@runtime_checkable
+class AstStuff(Protocol[AT]):
+    @property
+    @abstractmethod
+    def type(self) -> AT: ...
+
+    @property
+    @abstractmethod
+    def display(self) -> str: ...
+
+
 @runtime_checkable
 class AstLeaf(Protocol):
     @property
