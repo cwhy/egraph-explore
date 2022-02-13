@@ -14,12 +14,12 @@ T = TypeVar("T")
 def tree_replace(ast,
                  table,
                  key_type,
-                 dest_type):
+                 dest_constructor):
     if isinstance(ast, AstParent):
         args = []
         for arg in ast.args:
-            args.append(tree_replace(arg, table, key_type, dest_type))
-        return dest_type(tuple(args))
+            args.append(tree_replace(arg, table, key_type, dest_constructor))
+        return dest_constructor(tuple(args))
     elif isinstance(ast, key_type):
         # if arg is not in table, just return it
         return table.get(ast, ast)
