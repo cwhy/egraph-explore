@@ -3,55 +3,38 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import NamedTuple, FrozenSet, Tuple, Union, List, Dict, DefaultDict
 
-from mini_lisp.core import parse
-from mini_lisp.core_types import AstNode, Number, Symbol, AstParent
+from mini_lisp.core import parse, RawLeaves
+from mini_lisp.core_types import AstNode, Number, Symbol, AstParent, Variable
 from mini_lisp.program import Program, FreeAst, FreeAstLeaves
 from mini_lisp.rules import Rule, parse_ruleset, RuleSet
 
+AstP = AstNode[RawLeaves]
+
 
 class EGraph(NamedTuple):
-    root: FreeAstLeaves
-    node_link: Dict[FreeAstLeaves, FreeAstLeaves]
-    classes: List[FrozenSet[FreeAstLeaves]]
-    # Must use at least Python 3.7 to preserve the dict order
-    node2class: Dict[FreeAstLeaves, int]
+    class_links: Dict[int, Tuple[int, ...]]
+    classes: List[FrozenSet[AstP]]
+    registry: Dict[AstP, int]
 
-    def add_new_(self, node: FreeAstLeaves, parent: FreeAstLeaves):
-        assert parent in self.node2class
-        assert node not in self.node2class
-        self.node2class[node] = len(self.classes)
-        self.classes.append(frozenset([node]))
-        self.node_link[parent] = node
-
-    def add_link_(self, node: FreeAstLeaves, parent: FreeAstLeaves):
-        assert node in self.node2class
-        assert parent in self.node2class
-        self.node_link[parent] = node
+    @staticmethod
+    def from_ast_helper_(ast: AstNode[AstP], egraph: EGraph) -> None:
+        if isinstance(ast, Number) or isinstance(ast, Variable):
+            if ast not in egraph.registry:
+                egraph.classes.append(frozenset([ast]))
+                egraph.registry[ast] = len(egraph.classes) - 1
+        else:
+            assert isinstance(ast, AstParent)
+            for arg in ast.args:
+                EGraph.from_ast_helper_(arg, egraph)
+            egraph.classes.append(frozenset([ast]))
+            cls_id = len(egraph.classes) - 1
+            egraph.registry[ast] = cls_id
+            egraph.class_links[cls_id] = tuple(egraph.registry[a] for a in ast.args)
 
     @classmethod
-    def from_free_ast(cls, free_ast: AstNode[FreeAstLeaves]) -> EGraph:
-        empty = cls(free_ast, {}, [], {})
-        bfs = [free_ast]
-        while bfs:
-            current = bfs.pop(0)
-            if isinstance(current, AstParent):
-                op = current.args[0]
+    def from_ast(cls, ast: AstNode[AstP]) -> EGraph:
+        egraph = cls(class_links={}, classes=[], registry={})
+        EGraph.from_ast_helper_(ast, egraph)
+        return egraph
 
-                for arg in current.args[1:]:
-                    bfs.append(arg)
-
-                    if isinstance(arg, FreeAstLeaves):
-                        if arg not in empty.node2class:
-                            empty.add_new_(arg, op)
-                        else:
-                            assert arg in empty.node2class
-                            empty.add_link_(arg, op)
-                    else:
-                        assert isinstance(arg, AstParent)
-                        if arg. not in empty.node_link:
-
-                    empty.add_new_(op, current.parent)
-
-
-        root = EClass.from_astleaf(free_ast.args[0])
-        return EGraph(root, dict(edges))
+    def match_rule_(self, rule: Rule) -> List[Tuple[AstP, Symbol]]:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import NamedTuple, Tuple, FrozenSet, List, Optional, Literal, Dict
 
-from mini_lisp.core import Symbols, Ast, parse, RawLeaves
+from mini_lisp.core import Symbols, Ast, parse, RawLeaves, get_symbols
 from mini_lisp.core_types import Symbol, Variable, AstLeaf, AstNode, Number, AstParent
 from mini_lisp.program import FreeAst, Program, FreeAstLeaves
 from mini_lisp.tree_utils import tree_replace, tree_parent_display
@@ -79,18 +79,19 @@ class PartialProgram(NamedTuple):
         return cls.from_ast(parse(s))
 
 
-def match_node(tree_node: AstParent[RawLeaves], to_match: PartialAst) -> Optional[Symbols]:
+def match_tree(tree_node: AstParent[RawLeaves], to_match: AstParent[AstLeaf]) -> Optional[Symbols]:
     new_table: Dict[Symbol, AstNode[RawLeaves]] = {}
     for arg1, arg2 in zip(tree_node.args, to_match.args):
-        if isinstance(arg2, PartialAst):
-            if not isinstance(arg1, AstParent):
-                return None
+        if isinstance(arg2, AstParent):
+            if isinstance(arg1, AstParent):
+                return match_tree(arg1, arg2)
             else:
-                return match_node(arg1, arg2)
+                return None
         elif not isinstance(arg2, Symbol):
             if arg1 != arg2:
                 return None
         else:
+            assert isinstance(arg2, Symbol)
             if arg2 in new_table:
                 if new_table[arg2] != arg1:
                     return None
@@ -99,15 +100,25 @@ def match_node(tree_node: AstParent[RawLeaves], to_match: PartialAst) -> Optiona
     return Symbols.from_from_symbol(new_table)
 
 
-def match(ast: AstNode[RawLeaves], to_match: AstNode[AstLeaf]) -> List[Symbols]:
+class MatchResult(NamedTuple):
+    node: AstNode[RawLeaves]
+    symbols: Symbols
+
+
+def match(ast: AstNode[RawLeaves], to_match: AstNode[AstLeaf]) -> List[MatchResult]:
     sym_list = []
-    # too lazy to implement
-    # seem not related with egraphs
-    assert isinstance(ast, AstParent)
-    res = match_node(ast, to_match)
-    if res is not None:
-        sym_list.append(res)
-    for arg1 in ast.args:
-        if isinstance(arg1, Ast):
+    if isinstance(ast, AstParent):
+        if isinstance(to_match, AstParent):
+            res = match_tree(ast, to_match)
+            if res is not None:
+                sym_list.append(MatchResult(ast, res))
+        for arg1 in ast.args:
             sym_list += match(arg1, to_match)
-    return sym_list
+        return sym_list
+
+    else:
+        if isinstance(to_match, AstParent):
+            return []
+        else:
+            return [MatchResult(ast, Symbols.from_from_symbol({to_match: ast}))]
+

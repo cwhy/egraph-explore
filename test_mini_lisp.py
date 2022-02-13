@@ -4,8 +4,8 @@ from __future__ import annotations
 from mini_lisp.core import tokenize, parse_tokens, parse, Symbols, get_symbols
 from mini_lisp.core_types import Symbol, Variable
 from mini_lisp.patterns import PartialProgram, match
-from mini_lisp.program import FreeAst, Program
-from mini_lisp.rules import Rule
+from mini_lisp.program import FreeAst, Program, OrderedFreeAst
+from mini_lisp.rules import Rule, parse_ruleset
 from mini_lisp.tree_utils import tree_replace
 
 example = "(/ (^ (* (+ 1 2 3) x 4) (- 2)) 2)"
@@ -32,16 +32,6 @@ print(Program.parse(example).display)
 freed = tree_replace(parsed, all_symbols.to_symbol, Variable, FreeAst)
 #%%
 
-example_partial = "(/ (^ (* (+ 1 ?y 3) ?x 4) (- 2)) 2)"
-print(PartialProgram.parse(example_partial).display)
-
-pattern = PartialProgram.parse("(* 1 ?x)")
-print(pattern.display)
-source = parse("(/ (^ (* (+ 1 2 3) x 4) (* 1 (- 2))) (* 1 2))")
-print(source.display)
-print("Trying to match.....")
-result = match(source, pattern.partial_ast)
-print(result)
 
 rule = Rule.parse('(* a b)', '(* b a)')
 print(rule)
@@ -51,3 +41,18 @@ rule = Rule.parse('(* a a)', '(^ a 2)')
 print(rule)
 rule = Rule.parse('(+ (* a c) (* a d))', '(* a (+ c d))')
 print(rule)
+
+#%%
+example2 = "(/ (* a 2) 2)"
+ruleset = parse_ruleset(
+    """
+    (/ (* x y) z) == (* x (/ y z))
+    (/ x x) == 1
+    (* x 1) -> x
+    (* x 2) == (<< x 1)
+    (* x y) == (* y x)
+    """
+)
+
+print("\n--------\n".join(i.display for i in ruleset))
+print("\n".join(i.short_display for i in ruleset))

@@ -73,8 +73,7 @@ class Ast(NamedTuple):
     type: Literal["ast_parent"] = "ast_parent"
 
     def get_symbols(self, hole_prefix: Optional[str] = None) -> Symbols[AstLeaf]:
-        to_symbol = extract_var_helper(self, {}, hole_prefix)
-        return Symbols.from_to_symbol(to_symbol)
+        return get_symbols(self, hole_prefix)
 
     def unfill(self, symbols: Symbols, target: Type[AstParent[T]]) -> AstParent[T]:
         # noinspection PyTypeChecker
