@@ -42,10 +42,13 @@ class EGraph(NamedTuple):
         EGraph.from_ast_helper_(ast, egraph)
         return egraph
 
-    def match_rule_(self, rule: Rule) -> FrozenSet[RuleMatchResult]:
+    def match_rule(self, rule: Rule) -> FrozenSet[RuleMatchResult]:
         return rule.match(self.root_node)
 
     def apply_(self, rule_match_result: RuleMatchResult) -> None:
         index, to = rule_match_result
         class_id = self.registry[index]
+        self.registry[to] = class_id
         self.classes[class_id].add(to)
+
+    def to_mermaid(self) -> str:
