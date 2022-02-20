@@ -3,6 +3,8 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import TypeVar, runtime_checkable, Protocol, Tuple, Union, NamedTuple, Literal
 
+from utils.misc import get_rounded_num
+
 
 class Symbol(NamedTuple):
     i: int
@@ -20,16 +22,7 @@ class Symbol(NamedTuple):
         return str(self)
 
     def __str__(self) -> str:
-        if self.i == 0:
-            return chr(0x24EA) + " "
-        elif self.i <= 20:
-            return chr(0x245f + self.i) + " "
-        elif self.i <= 35:
-            return chr(0x323C + self.i) + " "
-        elif self.i <= 50:
-            return chr(0x328D + self.i) + " "
-        else:
-            return f"({self.i})"
+        return get_rounded_num(self.i)
 
 
 AstLeafType = Literal["number", "variable", "symbol"]

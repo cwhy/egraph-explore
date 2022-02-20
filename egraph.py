@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from collections import defaultdict
-from typing import NamedTuple, FrozenSet, Tuple, Union, List, Dict, DefaultDict, Set
+from typing import NamedTuple, FrozenSet, Tuple, List, Dict, Set
 
-from mini_lisp.core import parse, RawLeaves, Symbols
-from mini_lisp.core_types import AstNode, Number, Symbol, AstParent, Variable
-from mini_lisp.patterns import match
-from mini_lisp.program import Program, FreeAst, FreeAstLeaves
-from mini_lisp.rules import Rule, parse_ruleset, RuleSet, RuleMatchResult
+from mini_lisp.core import RawLeaves
+from mini_lisp.core_types import AstNode, Number, AstParent, Variable
+from mini_lisp.rules import Rule, RuleMatchResult
+from graph_visualization import MermaidGraph, hex2str, color_pair_gen
 
 AstP = AstNode[RawLeaves]
 
@@ -51,4 +49,39 @@ class EGraph(NamedTuple):
         self.registry[to] = class_id
         self.classes[class_id].add(to)
 
-    def to_mermaid(self) -> str:
+    def to_mermaid(self) -> MermaidGraph:
+        print(self.registry)
+        ## assume the dict is in order (python >= 3.6)
+        node_ids: Dict[AstP, int] = {n: i for i, n in enumerate(self.registry.keys())}
+        node_links = list({(node_from_id, node_ids[node_to])
+                           for node_from, node_from_id in node_ids.items()
+                           for class_to in self.class_links.get(self.registry[node_from], ())
+                           for node_to in self.classes[class_to]
+                           if isinstance(node_from, AstParent)})
+
+        """
+        More readable version of the previous code:
+        node_links = set()
+        for node_from, node_from_id in node_ids.items():
+            if isinstance(node_from, AstParent):
+                class_from = self.registry[node_from]
+                class_to = self.class_links.get(class_from, ())
+                for j in class_to:
+                    for node_to in self.classes[j]:
+                        node_links.add((node_from_id, node_ids[node_to]))
+        """
+
+        n_class_ids = len(self.registry)
+        styles = (n_class_ids)
+
+        def get_style(node_id: int) -> str:
+            f, s = colors[node_id]
+            return f"fill:{hex2str(f)},stroke:{hex2str(s)},stroke-width:4px"
+
+        return MermaidGraph.init_all_subgraph(
+            sub_graphs=[frozenset(x.display if not isinstance(x, AstParent) else "") for x in self.registry.keys()],
+            links=[],
+            sub_graph_links=node_links,
+            node_names=[f"EClass{self.registry[x]}" for x in self.registry.keys()],
+            node_styles={i: get_style(i) for i in range(n_class_ids)},
+        )
