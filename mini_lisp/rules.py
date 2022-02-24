@@ -55,7 +55,7 @@ class Rule(NamedTuple):
             to=tree_replace(self.r, match_result.symbols.from_symbol, Symbol, Ast)
         )
 
-    def match(self, ast: AstP) -> FrozenSet[RuleMatchResult]:
+    def match_ast(self, ast: AstP) -> FrozenSet[RuleMatchResult]:
         return frozenset(self.apply(res) for res in match(ast, self.l))
 
 

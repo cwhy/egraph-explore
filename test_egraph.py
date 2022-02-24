@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pprint import pprint
+
 from egraph import EGraph
 from mini_lisp.core import parse
 from mini_lisp.program import Program
@@ -36,6 +38,8 @@ res = g.match_rule(rule2)
 next_res = next(iter(res))
 print(next_res.display())
 g.apply_(next_res)
+pprint(g.classes)
+pprint(g.registry)
 g.to_mermaid().view_()
 
 rule2 = Rule.parse('(* x 1)', 'x')
