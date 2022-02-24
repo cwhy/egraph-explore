@@ -167,9 +167,9 @@ class MermaidGraph(NamedTuple):
                                rows(self.node_tag(s) for s in sub_g),
                                "end"))
                          for i, sub_g in enumerate(self.sub_graphs)]
-        subgraph_links = [f"{self.subgraph_id(i)} --- {self.subgraph_id(j)}"
+        subgraph_links = [f"{self.subgraph_id(i)} --x {self.subgraph_id(j)}"
                           for i, j in self.sub_graph_links]
-        links = [f"{self.node_tag(i)} --- {self.node_tag(j)}" for i, j in self.links]
+        links = [f"{self.node_tag(i)} --- {self.node_tag(j)}" for n, (i, j) in enumerate(self.links)]
         node_styles = [f"style {self.node_fmt(i)} {v.render_style()}"
                        for i, v in self.node_styles.items()
                        ] if self.node_styles is not None else []

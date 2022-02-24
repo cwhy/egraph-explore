@@ -30,3 +30,16 @@ next_res = next(iter(res))
 print(next_res.display())
 g.apply_(next_res)
 g.to_mermaid().view_()
+
+rule2 = Rule.parse('(/ x x)', '1')
+res = g.match_rule(rule2)
+next_res = next(iter(res))
+print(next_res.display())
+g.apply_(next_res)
+g.to_mermaid().view_()
+
+rule2 = Rule.parse('(* x 1)', 'x')
+res = g.match_rule(rule2)
+g.apply_(next(iter(res)))
+g.to_mermaid().view_()
+
