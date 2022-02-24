@@ -52,12 +52,16 @@ def hex2rgb(hex_color: int) -> Tuple[int, int, int]:
     return hex_color >> 16, hex_color >> 8 & 0xFF, hex_color & 0xFF
 
 
-def shuffler_style_gen(n: int, styles: Tuple[int, ...]) -> Callable[[int], Tuple[int, ...]]:
+def shuffler_style_gen(styles: Tuple[int, ...]) -> Callable[[int], Tuple[int, ...]]:
     all_styles = list(range(math.prod(styles)))
     random.shuffle(all_styles)
 
-    def decode(i: int) -> Tuple[int, ...]:
-        return tuple(all_styles[i] % s for s in styles)
+    def decode(n: int) -> Tuple[int, ...]:
+        decoded_styles = []
+        for i, s in enumerate(styles):
+            i, n = divmod(n, math.prod(styles[i + 1:]))
+            decoded_styles.append(i)
+        return tuple(decoded_styles)
 
     return lambda i: decode(all_styles[i % len(all_styles)])
 
@@ -73,44 +77,46 @@ class NodeStyle(NamedTuple):
     shape: int = 0
 
     color_map: List[int] = kelly_colors_hex
-    dasharray_opts: List[Optional[Tuple[int, int]]] = frozenset({None, (5, 5)})
-    shape_opts: List[str] = [{'()', '[]', '(())', '[[]]', '>]',
-                              '{}', '{{}}', '//', '\\\\', '/\\', '\\/'}]
+    dasharray_opts: List[Optional[Tuple[int, int]]] = [None, (5, 5)]
+    shape_opts: List[str] = ['()', '[]', '(())', '[[]]', '>]',
+                             '{}', '{{}}', '[//]', '[\\\\]', '[/\\]', '[\\/]']
 
-    def render_dasharray(self) -> str:
+    def render_dasharray(self) -> Optional[str]:
         dash_array_type = self.dasharray_opts[self.stroke_dasharray]
         if dash_array_type is not None:
-            return f"stroke-dasharray: {dash_array_type[0]} {dash_array_type[1]}"
+            return f"stroke-dasharray:{dash_array_type[0]} {dash_array_type[1]}"
         else:
-            return ""
+            return None
 
-    def render_shape(self, label: str) -> str:
+    def render_node(self, label: str) -> str:
         assert self.shape < len(self.shape_opts)
         s = self.shape_opts[self.shape]
-        begin = s[:len(s)//2]
-        ends = s[len(s)//2:]
+        begin = s[:len(s) // 2]
+        ends = s[len(s) // 2:]
+        return f"{begin}{label}{ends}"
 
     def render_color(self) -> str:
         if is_dark_hsp(*hex2rgb(self.color_map[self.fill])):
-            return "color: white"
+            return "color:white"
         else:
-            return "color: black"
+            return "color:black"
 
     def render_style(self) -> str:
-        return ",".join([
-            f"fill: {hex2str(self.color_map[self.fill])}",
-            f"stroke: {hex2str(self.color_map[self.stroke])}",
+        return ",".join(filter(None, [
+            f"fill:{hex2str(self.color_map[self.fill])}",
+            f"stroke:{hex2str(self.color_map[self.stroke])}",
             self.render_dasharray(),
-            f"color: {hex2str(self.color_map[self.stroke])}",
+            self.render_color(),
             "stroke-width:4px"
-        ])
+        ]))
 
     @classmethod
-    def get_style_gen(cls, n: int) -> Callable[[int], NodeStyle]:
+    def get_style_gen(cls, seed: int = 0) -> Callable[[int], NodeStyle]:
         new = cls()
+        random.seed(seed)
         styles_n = (len(new.color_map), len(new.color_map),
                     len(new.dasharray_opts), len(new.shape_opts))
-        int_style_gen = shuffler_style_gen(n, styles_n)
+        int_style_gen = shuffler_style_gen(styles_n)
 
         def style_gen(i: int) -> NodeStyle:
             return NodeStyle(*int_style_gen(i))
@@ -119,63 +125,57 @@ class NodeStyle(NamedTuple):
 
 
 class MermaidGraph(NamedTuple):
-    sub_graphs: List[FrozenSet[str]]
-    links: List[Tuple[str, str]]
+    sub_graphs: List[FrozenSet[int]]
+    links: List[Tuple[int, int]]
     sub_graph_links: List[Tuple[int, int]]
-    node_names: Optional[List[str]] = None
+    node_names: Optional[Dict[int, str]] = None
+    subgraph_names: Optional[List[str]] = None
     node_styles: Optional[Dict[int, NodeStyle]] = None
+    default_node_style: NodeStyle = NodeStyle()
 
-    @classmethod
-    def init_all_subgraph(cls,
-                          sub_graphs: List[FrozenSet[str]],
-                          links: List[Tuple[str, str]],
-                          sub_graph_links: List[Tuple[int, int]],
-                          node_names: Optional[List[str]] = None,
-                          node_styles: Optional[Dict[int, str]] = None) -> MermaidGraph:
-        nodes = set().union(*sub_graphs)
-        for i_node, j_node in links:
-            assert i_node in nodes
-            assert j_node in nodes
-        for i, j in sub_graph_links:
-            assert i < len(sub_graphs)
-            assert j < len(sub_graphs)
-        assert len(sub_graphs) == len(node_names)
-        assert len(nodes) == len(node_styles)
-        return MermaidGraph(sub_graphs, links, sub_graph_links, node_names, node_styles)
+    @staticmethod
+    def node_fmt(node_id: int) -> str:
+        # because mermaid don't like ints
+        return f"N{node_id}"
 
     def subgraph_name(self, i: int) -> str:
-        if self.node_names is None:
+        if self.subgraph_names is None:
             return f"subgraph"
         else:
-            assert len(self.node_names) == len(self.sub_graphs)
-            return self.node_names[i]
+            assert len(self.subgraph_names) == len(self.sub_graphs)
+            return self.subgraph_names[i]
 
     def subgraph_id(self, i: int) -> str:
         return f"{i}[{self.subgraph_name(i)}]"
 
-    @property
-    def node_ids(self) -> Dict[str, int]:
-        # need to do this because mermaid doesn't like special characters
-        # give up on lru_cache here, the performance really doesn't matter
-        return {v: i for i, v in enumerate(set().union(*self.sub_graphs).union(*sum(self.links, ())))}
+    def node_name(self, node_id: int) -> str:
+        if self.node_names is None:
+            return self.node_fmt(node_id)
+        else:
+            return self.node_names.get(node_id, self.node_fmt(node_id))
 
-    def node_tag(self, node: str) -> str:
-        return f'N{self.node_ids[node]}["{node}"]'
+    def node_tag(self, node_id: int) -> str:
+        if self.node_styles is None:
+            style = self.default_node_style
+        else:
+            style = self.node_styles.get(node_id, self.default_node_style)
+        return f"{self.node_fmt(node_id)}{style.render_node(self.node_name(node_id))}"
 
     def display(self) -> str:
-        base = f"flowchart LR"
+        base = f"flowchart TD"
         subgraph_strs = [rows((f"subgraph {self.subgraph_id(i)}",
                                rows(self.node_tag(s) for s in sub_g),
                                "end"))
                          for i, sub_g in enumerate(self.sub_graphs)]
-        subgraph_links = [f"{self.subgraph_id(i)} --> {self.subgraph_id(j)}"
+        subgraph_links = [f"{self.subgraph_id(i)} --- {self.subgraph_id(j)}"
                           for i, j in self.sub_graph_links]
-        links = [f"{self.node_tag(i)} --> {self.node_tag(j)}" for i, j in self.links]
-        node_styles = [f"style {i} {v.render_style()}"
+        links = [f"{self.node_tag(i)} --- {self.node_tag(j)}" for i, j in self.links]
+        node_styles = [f"style {self.node_fmt(i)} {v.render_style()}"
                        for i, v in self.node_styles.items()
                        ] if self.node_styles is not None else []
+        line_style = "linkStyle default stroke-width:2px,fill:none,stroke:#33333333"
 
-        return rows((base, rows(subgraph_strs), rows(subgraph_links), rows(links), rows(node_styles)))
+        return rows((base, rows(subgraph_strs), rows(subgraph_links), rows(links), rows(node_styles), line_style))
 
     def html(self) -> str:
         return f"""
@@ -203,4 +203,4 @@ def open_in_browser_(html_content: str):
     path = tempfile.NamedTemporaryFile(suffix=".html", delete=False).name
     with open(path, 'w') as f:
         f.write(html_content)
-    webbrowser.open('file://' + path)
+    webbrowser.open('file://' + path, autoraise=False)

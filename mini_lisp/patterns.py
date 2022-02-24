@@ -84,7 +84,9 @@ def match_tree(tree_node: AstParent[RawLeaves], to_match: AstParent[AstLeaf]) ->
     for arg1, arg2 in zip(tree_node.args, to_match.args):
         if isinstance(arg2, AstParent):
             if isinstance(arg1, AstParent):
-                return match_tree(arg1, arg2)
+                res = match_tree(arg1, arg2)
+                if res is not None:
+                    new_table.update(res.from_symbol)
             else:
                 return None
         elif not isinstance(arg2, Symbol):

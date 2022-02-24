@@ -5,7 +5,7 @@ from mini_lisp.core_types import Symbol, AstNode, AstLeaf, Variable
 from mini_lisp.patterns import PartialAst, match, MatchResult
 from mini_lisp.tree_utils import tree_replace, tree_display_short
 
-ops = frozenset(Variable(x) for x in {'+', '-', '*', '/', '^', '<<'})
+OPs = frozenset(Variable(x) for x in {'+', '-', '*', '/', '^', '<<'})
 
 AstP = AstNode[RawLeaves]
 
@@ -40,7 +40,7 @@ class Rule(NamedTuple):
         ast_l = parse(l)
         ast_r = parse(r)
         symbol_keys = get_symbols(ast_l).to_symbol.keys() | get_symbols(ast_r).to_symbol.keys()
-        symbol_keys -= ops
+        symbol_keys -= OPs
         to_symbol = {v: Symbol(i) for i, v in enumerate(symbol_keys)}
         symbols = Symbols.from_to_symbol(to_symbol)
         return Rule(
@@ -52,7 +52,7 @@ class Rule(NamedTuple):
     def apply(self, match_result: MatchResult) -> RuleMatchResult:
         return RuleMatchResult(
             index=match_result.node,
-            to=tree_replace(self.r, match_result.symbols, Symbol, Ast)
+            to=tree_replace(self.r, match_result.symbols.from_symbol, Symbol, Ast)
         )
 
     def match(self, ast: AstP) -> FrozenSet[RuleMatchResult]:

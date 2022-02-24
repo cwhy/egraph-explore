@@ -24,7 +24,7 @@ def tree_replace(ast,
         # if arg is not in table, just return it
         return table.get(ast, ast)
     else:
-        assert isinstance(ast, Number)
+        # assert isinstance(ast, Number)
         return ast
 
 
