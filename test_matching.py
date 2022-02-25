@@ -29,7 +29,7 @@ print(match_results)
 
 #%%
 rule = Rule.parse('(* 0 a)', '0')
-print(match(source, rule.l))
+print(match(source, rule.lhs))
 k = rule.match_ast(source)
 print(k)
 print(next(iter(k)).display())

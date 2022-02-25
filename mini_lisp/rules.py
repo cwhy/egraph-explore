@@ -1,4 +1,4 @@
-from typing import NamedTuple, Literal, List, FrozenSet
+from typing import NamedTuple, Literal, List, FrozenSet, Iterable
 
 from mini_lisp.core import Symbols, parse, get_symbols, RawLeaves, Ast
 from mini_lisp.core_types import Symbol, AstNode, AstLeaf, Variable
@@ -19,18 +19,18 @@ class RuleMatchResult(NamedTuple):
 
 
 class Rule(NamedTuple):
-    l: AstNode[AstLeaf]
-    r: AstNode[AstLeaf]
+    lhs: AstNode[AstLeaf]
+    rhs: AstNode[AstLeaf]
     symbols: Symbols
 
     @property
     def display(self):
         symbol_str = f", where {self.symbols}\n" if len(self.symbols.to_symbol) != 0 else ""
-        return f"LHS: \n{self.l.display}\nRHS: \n{self.r.display}\n " + symbol_str
+        return f"LHS: \n{self.lhs.display}\nRHS: \n{self.rhs.display}\n " + symbol_str
 
     @property
     def short_display(self) -> str:
-        return f"{tree_display_short(self.l)} -> {tree_display_short(self.r)}"
+        return f"{tree_display_short(self.lhs)} -> {tree_display_short(self.rhs)}"
 
     def __repr__(self):
         return self.short_display
@@ -44,19 +44,22 @@ class Rule(NamedTuple):
         to_symbol = {v: Symbol(i) for i, v in enumerate(symbol_keys)}
         symbols = Symbols.from_to_symbol(to_symbol)
         return Rule(
-            l=tree_replace(ast_l, symbols.to_symbol, Variable, PartialAst),
-            r=tree_replace(ast_r, symbols.to_symbol, Variable, PartialAst),
+            lhs=tree_replace(ast_l, symbols.to_symbol, Variable, PartialAst),
+            rhs=tree_replace(ast_r, symbols.to_symbol, Variable, PartialAst),
             symbols=symbols
         )
 
     def apply(self, match_result: MatchResult) -> RuleMatchResult:
         return RuleMatchResult(
             index=match_result.node,
-            to=tree_replace(self.r, match_result.symbols.from_symbol, Symbol, Ast)
+            to=tree_replace(self.rhs, match_result.symbols.from_symbol, Symbol, Ast)
         )
 
+    def apply_all(self, match_results: Iterable[MatchResult]) -> AstP:
+        return frozenset(self.apply(x) for x in match_results)
+
     def match_ast(self, ast: AstP) -> FrozenSet[RuleMatchResult]:
-        return frozenset(self.apply(res) for res in match(ast, self.l))
+        return self.apply_all(match(self.lhs, ast))
 
 
 # Examples:

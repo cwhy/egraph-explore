@@ -4,8 +4,9 @@ from dataclasses import dataclass
 from itertools import chain
 from typing import NamedTuple, FrozenSet, Tuple, List, Dict, Set, Optional
 
-from mini_lisp.core import RawLeaves
-from mini_lisp.core_types import AstNode, Number, AstParent, Variable
+from mini_lisp.core import RawLeaves, Symbols
+from mini_lisp.core_types import AstNode, Number, AstParent, Variable, Symbol
+from mini_lisp.patterns import MatchResult
 from mini_lisp.rules import Rule, RuleMatchResult, OPs
 from graph_visualization import MermaidGraph, NodeStyle
 from utils.misc import get_rounded_num
@@ -59,8 +60,64 @@ class EGraph:
         egraph.root_class = egraph.n_classes - 1
         return egraph
 
+    def match_class_helper(self, class_id: int, to_match: AstP) -> Optional[MatchResult]:
+        # Only return the first one matched
+        for node in self.classes[class_id]:
+            result = self.match_node_helper(node, to_match)
+            if result is not None:
+                return MatchResult(node, result)
+        else:
+            return None
+
+    def match_node_helper(self, node: AstP, to_match: AstP) -> Optional[Symbols]:
+        if isinstance(to_match, AstParent):
+            if not isinstance(node, AstParent):
+                return None
+            else:
+                new_table: Dict[Symbol, AstNode[RawLeaves]] = {}
+                for arg1, arg2 in zip(node.args, to_match.args):
+                    assert arg1 in self.registry
+                    result = self.match_class_helper(self.registry[arg1], arg2)
+                    if result is not None:
+                        new_table.update(result.symbols.from_symbol)
+                    else:
+                        return None
+                else:
+                    return Symbols.from_from_symbol(new_table)
+        else:
+            if isinstance(to_match, Symbol):
+                return Symbols.from_from_symbol({to_match: node})
+            elif isinstance(node, AstParent):
+                return None
+            else:
+                if to_match != node:
+                    if to_match in self.registry:
+                        assert node in self.registry
+                        if self.registry[to_match] != self.registry[node]:
+                            return None
+                        else:
+                            return Symbols.from_from_symbol({})
+                    else:
+                        return None
+                else:
+                    return Symbols.from_from_symbol({})
+
+    def match_node(self, node: AstP, rule: Rule) -> Optional[RuleMatchResult]:
+        print("*****************************")
+        print(node.display)
+        print("*****************************")
+        result = self.match_node_helper(node, rule.lhs)
+        rr = rule.apply(MatchResult(node, result)) if result is not None else None
+
+        if rr is not None:
+            print("|" * 12)
+            print(result)
+            print(rr.display())
+            print("|" * 12)
+        return rr
+
     def match_rule(self, rule: Rule) -> FrozenSet[RuleMatchResult]:
-        return frozenset().union(*(rule.match_ast(n) for n in self.root_nodes))
+        return frozenset(filter(None, (self.match_node(node, rule) for node in self.registry)))
 
     def merge_class_(self, from_class_id: int, to_class_id: int) -> None:
         to_class = self.classes.pop(to_class_id)
@@ -111,8 +168,8 @@ class EGraph:
             sub_graph_links=[],
             subgraph_names=[f"\"{get_rounded_num(i)}\"" for i in subgraph_id],
             node_names={node_ids[k]: f"\"{k.display}\""
-                        if not isinstance(k, AstParent)
-                        else f"\"{k.args[0].display}\""
+            if not isinstance(k, AstParent)
+            else f"\"{k.args[0].display}\""
                         for k in self.registry.keys()
                         if k not in OPs},
             node_styles={node_ids[k]: style_format(k) for k in self.registry.keys() if k not in OPs},
