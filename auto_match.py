@@ -21,7 +21,7 @@ def all_match_(egraph: EGraph, rule_set: RuleSet, max_iter: int = 200) -> None:
         h = nh
         nh = hash(egraph)
         iter_counter += 1
-        if iter_counter > 100:
+        if iter_counter > max_iter:
             break
 
 
