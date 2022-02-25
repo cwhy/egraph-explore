@@ -20,6 +20,9 @@ class EGraph:
     registry: Dict[AstP, int]
     root_class: Optional[int] = None
 
+    def __hash__(self):
+        return hash(tuple((k, hash(frozenset(v))) for k, v in self.classes.items()))
+
     @property
     def root_nodes(self) -> Set[AstP]:
         if self.root_class is None:
@@ -60,33 +63,36 @@ class EGraph:
         egraph.root_class = egraph.n_classes - 1
         return egraph
 
-    def match_class_helper(self, class_id: int, to_match: AstP) -> Optional[MatchResult]:
+    def match_class_helper(self, class_id: int, to_match: AstP, symbol: Symbols) -> Optional[MatchResult]:
         # Only return the first one matched
         for node in self.classes[class_id]:
-            result = self.match_node_helper(node, to_match)
+            result = self.match_node_helper(node, to_match, symbol)
             if result is not None:
                 return MatchResult(node, result)
         else:
             return None
 
-    def match_node_helper(self, node: AstP, to_match: AstP) -> Optional[Symbols]:
+    def match_node_helper(self, node: AstP, to_match: AstP, symbol: Symbols) -> Optional[Symbols]:
         if isinstance(to_match, AstParent):
             if not isinstance(node, AstParent):
                 return None
             else:
-                new_table: Dict[Symbol, AstNode[RawLeaves]] = {}
                 for arg1, arg2 in zip(node.args, to_match.args):
                     assert arg1 in self.registry
-                    result = self.match_class_helper(self.registry[arg1], arg2)
+                    result = self.match_class_helper(self.registry[arg1], arg2, symbol)
                     if result is not None:
-                        new_table.update(result.symbols.from_symbol)
+                        symbol |= result.symbols
                     else:
                         return None
                 else:
-                    return Symbols.from_from_symbol(new_table)
+                    return symbol
         else:
             if isinstance(to_match, Symbol):
-                return Symbols.from_from_symbol({to_match: node})
+                # symbol is not there or has same value
+                if node == symbol.from_symbol.get(to_match, node):
+                    return Symbols.from_from_symbol({to_match: node})
+                else:
+                    return None
             elif isinstance(node, AstParent):
                 return None
             else:
@@ -96,16 +102,15 @@ class EGraph:
                         if self.registry[to_match] != self.registry[node]:
                             return None
                         else:
-                            return Symbols.from_from_symbol({})
+                            return Symbols.empty()
                     else:
                         return None
                 else:
-                    return Symbols.from_from_symbol({})
+                    return Symbols.empty()
 
     def match_node(self, node: AstP, rule: Rule) -> Optional[RuleMatchResult]:
-        result = self.match_node_helper(node, rule.lhs)
+        result = self.match_node_helper(node, rule.lhs, Symbols.empty())
         return rule.apply(MatchResult(node, result)) if result is not None else None
-
 
     def match_rule(self, rule: Rule) -> FrozenSet[RuleMatchResult]:
         return frozenset(filter(None, (self.match_node(node, rule) for node in self.registry)))
@@ -121,13 +126,15 @@ class EGraph:
     def apply_(self, rule_match_result: RuleMatchResult) -> None:
         from_ast, to = rule_match_result
         from_class_id = self.registry[from_ast]
+        assert from_class_id in self.classes
         if to not in self.registry:
             self.registry[to] = from_class_id
             self.classes[from_class_id].add(to)
             EGraph.attach_ast_(to, self)
         else:
             to_class_id = self.registry[to]
-            self.merge_class_(from_class_id, to_class_id)
+            if from_class_id != to_class_id:
+                self.merge_class_(from_class_id, to_class_id)
 
     def to_mermaid(self) -> MermaidGraph:
         print(self.registry)

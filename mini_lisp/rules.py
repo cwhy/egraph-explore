@@ -1,7 +1,7 @@
 from typing import NamedTuple, Literal, List, FrozenSet, Iterable
 
 from mini_lisp.core import Symbols, parse, get_symbols, RawLeaves, Ast
-from mini_lisp.core_types import Symbol, AstNode, AstLeaf, Variable
+from mini_lisp.core_types import Symbol, AstNode, AstLeaf, Variable, AstParent
 from mini_lisp.patterns import PartialAst, match, MatchResult
 from mini_lisp.tree_utils import tree_replace, tree_display_short
 
@@ -70,7 +70,7 @@ class Rule(NamedTuple):
 RuleSet = FrozenSet[Rule]
 
 
-def parse_ruleset(rules_str: str) -> RuleSet:
+def parse_ruleset(rules_str: str, trim: bool = False) -> RuleSet:
     rules = set()
     for row in rules_str.split('\n'):
         if "->" in row:
@@ -79,4 +79,15 @@ def parse_ruleset(rules_str: str) -> RuleSet:
             eq_rules = row.split('==')
             rules.add(Rule.parse(*eq_rules))
             rules.add(Rule.parse(*reversed(row.split('=='))))
-    return frozenset(rules)
+    if trim:
+        return trim_ruleset(rules)
+    else:
+        return frozenset(rules)
+
+
+def trim_ruleset(rules: Iterable[Rule]) -> RuleSet:
+    new_rules = frozenset(
+        filter(lambda rule:
+               not(isinstance(rule.rhs, AstParent) and not isinstance(rule.lhs, AstParent)),
+               rules))
+    return new_rules

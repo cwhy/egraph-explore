@@ -23,6 +23,13 @@ class Symbols(Generic[TN]):
     def __repr__(self):
         return " ┃ ".join(f"{s.display}: {i.display}" for i, s in self.to_symbol.items())
 
+    def __or__(self, symbol: Symbols) -> Symbols:
+        return Symbols.from_from_symbol({**self.from_symbol, **symbol.from_symbol})
+
+    @classmethod
+    def empty(cls) -> Symbols:
+        return Symbols(to_symbol={}, from_symbol={})
+
     @classmethod
     def from_to_symbol(cls, to_symbol_table: MyMapping[TN, Symbol]) -> Symbols:
         from_symbol_table = {}
