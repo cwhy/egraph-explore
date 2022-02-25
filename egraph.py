@@ -103,18 +103,9 @@ class EGraph:
                     return Symbols.from_from_symbol({})
 
     def match_node(self, node: AstP, rule: Rule) -> Optional[RuleMatchResult]:
-        print("*****************************")
-        print(node.display)
-        print("*****************************")
         result = self.match_node_helper(node, rule.lhs)
-        rr = rule.apply(MatchResult(node, result)) if result is not None else None
+        return rule.apply(MatchResult(node, result)) if result is not None else None
 
-        if rr is not None:
-            print("|" * 12)
-            print(result)
-            print(rr.display())
-            print("|" * 12)
-        return rr
 
     def match_rule(self, rule: Rule) -> FrozenSet[RuleMatchResult]:
         return frozenset(filter(None, (self.match_node(node, rule) for node in self.registry)))
