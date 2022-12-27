@@ -24,6 +24,7 @@ def all_match_(egraph: EGraph, rule_set: RuleSet, visualize_lvl: int =0, max_ite
         nh = hash(egraph)
         iter_counter += 1
         if iter_counter > max_iter:
+            print("max_iter reached! ")
             break
 
 
@@ -63,4 +64,4 @@ ruleset = parse_ruleset(
     """, trim=True
 )
 # (^ x n) == (* x (^ x (- n 1)))
-all_match_(g, ruleset, visualize_lvl=1, max_iter=10)
+all_match_(g, ruleset, visualize_lvl=1)
