@@ -36,11 +36,12 @@ class Rule(NamedTuple):
         return self.short_display
 
     @classmethod
-    def parse(cls, l: str, r: str) -> 'Rule':
+    def parse(cls, l: str, r: str, custom_ops: Iterable[str] = tuple()) -> 'Rule':
         ast_l = parse(l)
         ast_r = parse(r)
         symbol_keys = get_symbols(ast_l).to_symbol.keys() | get_symbols(ast_r).to_symbol.keys()
         symbol_keys -= OPs
+        symbol_keys -= set(custom_ops)
         to_symbol = {v: Symbol(i) for i, v in enumerate(symbol_keys)}
         symbols = Symbols.from_to_symbol(to_symbol)
         return Rule(
@@ -70,15 +71,15 @@ class Rule(NamedTuple):
 RuleSet = FrozenSet[Rule]
 
 
-def parse_ruleset(rules_str: str, trim: bool = False) -> RuleSet:
+def parse_ruleset(rules_str: str, trim: bool = False, custom_ops: Iterable[str] = tuple()) -> RuleSet:
     rules = set()
     for row in rules_str.split('\n'):
         if "->" in row:
-            rules.add(Rule.parse(*row.split('->')))
+            rules.add(Rule.parse(*row.split('->')), custom_ops)
         elif "==" in row:
             eq_rules = row.split('==')
-            rules.add(Rule.parse(*eq_rules))
-            rules.add(Rule.parse(*reversed(row.split('=='))))
+            rules.add(Rule.parse(*eq_rules, custom_ops))
+            rules.add(Rule.parse(*reversed(row.split('=='))), custom_ops)
     if trim:
         return trim_ruleset(rules)
     else:
@@ -88,6 +89,6 @@ def parse_ruleset(rules_str: str, trim: bool = False) -> RuleSet:
 def trim_ruleset(rules: Iterable[Rule]) -> RuleSet:
     new_rules = frozenset(
         filter(lambda rule:
-               not(isinstance(rule.rhs, AstParent) and not isinstance(rule.lhs, AstParent)),
+               not (isinstance(rule.rhs, AstParent) and not isinstance(rule.lhs, AstParent)),
                rules))
     return new_rules
