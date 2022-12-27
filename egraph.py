@@ -56,7 +56,7 @@ class EGraph:
     def from_ast(cls, ast: AstP) -> EGraph:
         egraph = cls(classes={}, registry={})
         EGraph.attach_ast_(ast, egraph)
-        egraph.root_class = len(egraph.classes) - 1
+        egraph.root_class = len(egraph.classes)
         return egraph
 
     def match_class_helper(self, class_id: int, to_match: AstP, symbol: Symbols) -> Optional[MatchResult]:

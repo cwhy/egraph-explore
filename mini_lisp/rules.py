@@ -75,11 +75,11 @@ def parse_ruleset(rules_str: str, trim: bool = False, custom_ops: Iterable[str] 
     rules = set()
     for row in rules_str.split('\n'):
         if "->" in row:
-            rules.add(Rule.parse(*row.split('->')), custom_ops)
+            rules.add(Rule.parse(*row.split('->'), custom_ops))
         elif "==" in row:
             eq_rules = row.split('==')
             rules.add(Rule.parse(*eq_rules, custom_ops))
-            rules.add(Rule.parse(*reversed(row.split('=='))), custom_ops)
+            rules.add(Rule.parse(*reversed(row.split('==')), custom_ops))
     if trim:
         return trim_ruleset(rules)
     else:
