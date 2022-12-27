@@ -5,7 +5,7 @@ from mini_lisp.core import parse
 from mini_lisp.rules import RuleSet, parse_ruleset, trim_ruleset
 
 
-def all_match_(egraph: EGraph, rule_set: RuleSet, max_iter: int = 200) -> None:
+def all_match_(egraph: EGraph, rule_set: RuleSet, visualize_lvl: int =0, max_iter: int = 200) -> None:
     iter_counter = 0
     h = hash(egraph)
     nh = None
@@ -16,8 +16,10 @@ def all_match_(egraph: EGraph, rule_set: RuleSet, max_iter: int = 200) -> None:
         for result in results:
             old_h_in = hash(egraph)
             egraph.apply_(result)
-            if hash(egraph) != old_h_in:
+            if hash(egraph) != old_h_in and visualize_lvl == 2:
                 egraph.to_mermaid().view_()
+        if hash(egraph) != old_h_in and visualize_lvl == 1:
+            egraph.to_mermaid().view_()
         h = nh
         nh = hash(egraph)
         iter_counter += 1
@@ -38,5 +40,27 @@ ruleset = parse_ruleset(
     """, trim=True
 )
 print(ruleset)
-all_match_(egraph, ruleset)
+
+all_match_(egraph, ruleset, visualize_lvl=2)
 egraph.to_mermaid().view_()
+
+example = "(^ (+ a 2) 2)"
+g = EGraph.from_ast(parse(example))
+g.to_mermaid().view_()
+ruleset = parse_ruleset(
+    """
+    (* (+ x y) z) == (+ (* x z) (* y z))
+    (* x y) == (* y x)
+    (+ x y) == (+ y x)
+    (* (* x y) z) == (* x (* y z))
+    (+ (+ a b) c) == (+ a (+ b c))
+    (/ x x) -> 1
+    (* x 1) -> x
+    (* x 2) == (<< x 1)
+    (^ x 2) == (* x x)
+    (^ x 1) -> x
+    (^ x 0) -> 1
+    """, trim=True
+)
+# (^ x n) == (* x (^ x (- n 1)))
+all_match_(g, ruleset, visualize_lvl=1, max_iter=10)

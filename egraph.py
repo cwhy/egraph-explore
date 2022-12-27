@@ -16,6 +16,10 @@ AstP = AstNode[RawLeaves]
 
 @dataclass
 class EGraph:
+    # classes are represented by ID, which nodes are represented by AST
+    # classes: id -> set of nodes in a class
+    # Ast ->
+    # registry: nodes belongs to which classes
     classes: Dict[int, Set[AstP]]
     registry: Dict[AstP, int]
     root_class: Optional[int] = None
@@ -34,14 +38,11 @@ class EGraph:
     def n_classes(self) -> int:
         return len(self.classes)
 
-    @property
-    def next_class(self) -> int:
-        return self.n_classes
-
     def attach_ast_node_(self, ast: AstP) -> None:
         if ast not in self.registry:
-            self.registry[ast] = self.next_class
-            self.classes[self.next_class] = {ast}
+            new_class = self.n_classes
+            self.registry[ast] = new_class
+            self.classes[new_class] = {ast}
 
     @staticmethod
     def attach_ast_(ast: AstP, egraph: EGraph) -> None:
@@ -49,8 +50,7 @@ class EGraph:
             egraph.attach_ast_node_(ast)
         else:
             if not isinstance(ast, AstParent):
-                print(ast)
-            assert isinstance(ast, AstParent)
+                raise Exception(f"Ast {ast} has unknown type: {type(ast)}")
             for arg in ast.args:
                 EGraph.attach_ast_(arg, egraph)
             egraph.attach_ast_node_(ast)
