@@ -16,6 +16,9 @@ AstP = AstNode[RawLeaves]
 
 @dataclass
 class EGraph:
+    # classes are represented by ID, which nodes are represented by AST
+    # classes: id -> set of nodes in a class
+    # registry: nodes belongs to which classes
     classes: Dict[int, Set[AstP]]
     registry: Dict[AstP, int]
     root_class: Optional[int] = None
@@ -30,18 +33,12 @@ class EGraph:
         else:
             return self.classes[self.root_class]
 
-    @property
-    def n_classes(self) -> int:
-        return len(self.classes)
-
-    @property
-    def next_class(self) -> int:
-        return self.n_classes
-
     def attach_ast_node_(self, ast: AstP) -> None:
+        # TODO this is not efficient
+        new_class_id = max(self.classes.keys(), default=0) + 1
         if ast not in self.registry:
-            self.registry[ast] = self.next_class
-            self.classes[self.next_class] = {ast}
+            self.registry[ast] = new_class_id
+            self.classes[new_class_id] = {ast}
 
     @staticmethod
     def attach_ast_(ast: AstP, egraph: EGraph) -> None:
@@ -49,8 +46,7 @@ class EGraph:
             egraph.attach_ast_node_(ast)
         else:
             if not isinstance(ast, AstParent):
-                print(ast)
-            assert isinstance(ast, AstParent)
+                raise Exception(f"Ast {ast} has unknown type: {type(ast)}")
             for arg in ast.args:
                 EGraph.attach_ast_(arg, egraph)
             egraph.attach_ast_node_(ast)
@@ -60,7 +56,7 @@ class EGraph:
     def from_ast(cls, ast: AstP) -> EGraph:
         egraph = cls(classes={}, registry={})
         EGraph.attach_ast_(ast, egraph)
-        egraph.root_class = egraph.n_classes - 1
+        egraph.root_class = len(egraph.classes) - 1
         return egraph
 
     def match_class_helper(self, class_id: int, to_match: AstP, symbol: Symbols) -> Optional[MatchResult]:
