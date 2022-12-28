@@ -28,7 +28,7 @@
             - https://www.philipzucker.com/egraph-2/
             - https://www.hpl.hp.com/techreports/2003/HPL-2003-148.pdf 
         - Z3(too complex):
-            - 
+            - https://leodemoura.github.io/files/ematching.pdf
         - Relational EMatching:
             - talk:
                 - https://www.youtube.com/watch?v=e2EtwjgZMnY
