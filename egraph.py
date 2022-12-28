@@ -33,6 +33,16 @@ class EGraph:
         else:
             return self.classes[self.root_class].copy()
 
+ #    def __contains__(self, item: AstP) -> bool:
+ #        if item in self.classes[self.root_class]:
+ #            return True
+ #        elif not isinstance(item, AstParent):
+ #            return False
+ #        else:
+ #            for arg in item.args:
+ #                if arg in self.registry:
+
+
     def attach_ast_node_(self, ast: AstP) -> None:
         if ast not in self.registry:
             # TODO this is not efficient
@@ -137,7 +147,6 @@ class EGraph:
                 self.merge_class_(from_class_id, to_class_id)
 
     def to_mermaid(self) -> MermaidGraph:
-        print(self.registry)
         ## assume the dict is in order (python >= 3.6)
         node_ids: Dict[AstP, int] = {n: i for i, n in enumerate(self.registry.keys()) if n not in OPs}
 
@@ -177,4 +186,3 @@ class EGraph:
                         if k not in OPs},
             node_styles={node_ids[k]: style_format(k) for k in self.registry.keys() if k not in OPs},
         )
-
