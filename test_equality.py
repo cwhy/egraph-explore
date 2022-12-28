@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 from egraph import EGraph, AstP
+from equal_egraph import equal_ast
+from match_egraph import match_rule
 from mini_lisp.core import parse
 from mini_lisp.rules import RuleSet, parse_ruleset
 
 
-def saturate(egraph: EGraph, rule_set: RuleSet, visualize_lvl: int =0, max_iter: int = 200) -> None:
+def saturate(egraph: EGraph, rule_set: RuleSet, visualize_lvl: int = 0, max_iter: int = 200) -> None:
     iter_counter = 0
     h = hash(egraph)
     nh = None
     while nh != h:
-        results = list(res for rule in rule_set for res in egraph.match_rule(rule))
+        results = list(res for rule in rule_set for res in match_rule(egraph, rule))
         if len(results) == 0:
             break
         for result in results:
@@ -27,8 +29,10 @@ def saturate(egraph: EGraph, rule_set: RuleSet, visualize_lvl: int =0, max_iter:
             print("max_iter reached! ")
             break
 
+
 def check_equality(ast: AstP, egraph: EGraph):
-    return {ast} <= egraph.root_nodes
+    return equal_ast(egraph, ast)
+
 
 example = "(* (+ a 2) b)"
 g = EGraph.from_ast(parse(example))
@@ -48,3 +52,4 @@ g.to_mermaid().view_()
 # test equality
 example2 = "(+ (* a b) (* 2 b))"
 assert check_equality(parse(example2), g)
+assert not check_equality(parse("(+ (* a b) (* 3 b))"), g)

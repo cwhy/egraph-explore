@@ -3,6 +3,7 @@ from __future__ import annotations
 from pprint import pprint
 
 from egraph import EGraph
+from match_egraph import match_rule
 from mini_lisp.core import parse
 from mini_lisp.rules import Rule
 
@@ -12,7 +13,7 @@ print(next(iter(g.root_nodes)).display)
 g.to_mermaid().view_()
 
 rule2 = Rule.parse('(* x 2)', '(<< x 1)')
-res = g.match_rule(rule2)
+res = match_rule(g, rule2)
 next_res = next(iter(res))
 print(next_res.display())
 g.apply_(next_res)
@@ -20,7 +21,7 @@ print(g)
 g.to_mermaid().view_()
 
 rule2 = Rule.parse('(/ (* x y) z)', '(* x (/ y z))')
-res = g.match_rule(rule2)
+res = match_rule(g, rule2)
 print(res)
 assert len(res) >= 1
 next_res = next(iter(res))
@@ -29,7 +30,7 @@ g.apply_(next_res)
 g.to_mermaid().view_()
 
 rule2 = Rule.parse('(/ x x)', '1')
-res = g.match_rule(rule2)
+res = match_rule(g, rule2)
 next_res = next(iter(res))
 print(next_res.display())
 g.apply_(next_res)
@@ -38,7 +39,7 @@ pprint(g.registry)
 g.to_mermaid().view_()
 
 rule2 = Rule.parse('(* x 1)', 'x')
-res = g.match_rule(rule2)
+res = match_rule(g, rule2)
 g.apply_(next(iter(res)))
 g.to_mermaid().view_()
 
@@ -50,7 +51,7 @@ print(next(iter(g.root_nodes)).display)
 g.to_mermaid().view_()
 
 rule = Rule.parse('(* 0 a)', '0')
-res = g.match_rule(rule)
+res = match_rule(g, rule)
 print(res)
 next_res = next(iter(res))
 print(next_res.display())
