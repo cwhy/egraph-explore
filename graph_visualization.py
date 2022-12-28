@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import tempfile
 import webbrowser
+from enum import Enum, auto
 from functools import cached_property, lru_cache
 import random
 from typing import NamedTuple, List, Tuple, FrozenSet, Iterable, Optional, Dict, Iterator, Generator, TypeVar, Callable
@@ -79,7 +80,8 @@ class NodeStyle(NamedTuple):
     color_map: List[int] = kelly_colors_hex
     dasharray_opts: List[Optional[Tuple[int, int]]] = [None, (5, 5)]
     shape_opts: List[str] = ['()', '[]', '(())', '[[]]', '>]',
-                             '{}', '{{}}', '[//]', '[\\\\]', '[/\\]', '[\\/]']
+                             # '{}',
+                             '{{}}', '[//]', '[\\\\]', '[/\\]', '[\\/]']
 
     def render_dasharray(self) -> Optional[str]:
         dash_array_type = self.dasharray_opts[self.stroke_dasharray]
@@ -93,7 +95,7 @@ class NodeStyle(NamedTuple):
         s = self.shape_opts[self.shape]
         begin = s[:len(s) // 2]
         ends = s[len(s) // 2:]
-        return f"{begin}{label}{ends}"
+        return f"{begin}\"{label}\"{ends}"
 
     def render_color(self) -> str:
         if is_dark_hsp(*hex2rgb(self.color_map[self.fill])):
@@ -107,7 +109,7 @@ class NodeStyle(NamedTuple):
             f"stroke:{hex2str(self.color_map[self.stroke])}",
             self.render_dasharray(),
             self.render_color(),
-            "stroke-width:4px"
+            "stroke-width:3px",
         ]))
 
     @classmethod
@@ -124,10 +126,41 @@ class NodeStyle(NamedTuple):
         return style_gen
 
 
+class LinkableType(Enum):
+    Node = auto()
+    Subgraph = auto()
+
+
+class Linkable(NamedTuple):
+    id: int
+    type: LinkableType
+
+    def render(self, mermaid_graph: MermaidGraph) -> str:
+        if self.type == LinkableType.Node:
+            return mermaid_graph.node_tag(self.id)
+        elif self.type == LinkableType.Subgraph:
+            return mermaid_graph.subgraph_id(self.id)
+
+        else:
+            raise ValueError(f"Unknown LinkableType: {self.type}")
+
+
+class Link(NamedTuple):
+    source: Linkable
+    target: Linkable
+    content: str = ""
+    style: int = 0
+
+    def render(self, mermaid_graph: MermaidGraph) -> str:
+        link_connector = mermaid_graph.get_link_connector(self.style)
+
+        return " ".join(
+            (self.source.render(mermaid_graph), f"{link_connector}|{self.content}|", self.target.render(mermaid_graph)))
+
+
 class MermaidGraph(NamedTuple):
     sub_graphs: List[FrozenSet[int]]
-    links: List[Tuple[int, int]]
-    sub_graph_links: List[Tuple[int, int]]
+    links: List[Link]
     node_names: Optional[Dict[int, str]] = None
     subgraph_names: Optional[List[str]] = None
     node_styles: Optional[Dict[int, NodeStyle]] = None
@@ -161,21 +194,28 @@ class MermaidGraph(NamedTuple):
             style = self.node_styles.get(node_id, self.default_node_style)
         return f"{self.node_fmt(node_id)}{style.render_node(self.node_name(node_id))}"
 
+    def get_link_connector(self, style: int) -> str:
+        if style == 0:
+            return "---"
+        elif style == 1:
+            return "--x"
+        else:
+            raise ValueError(f"Unknown link style: {style}")
+
     def display(self) -> str:
+        theme = "%%{init: {'themeVariables': { 'primaryColor': '#ff0000', 'fontFamily': 'JetBrains Mono', 'fontSize': 4.8rem, 'fontWeight': 100}}}%%"
         base = f"flowchart TD"
         subgraph_strs = [rows((f"subgraph {self.subgraph_id(i)}",
                                rows(self.node_tag(s) for s in sub_g),
                                "end"))
                          for i, sub_g in enumerate(self.sub_graphs)]
-        subgraph_links = [f"{self.subgraph_id(i)} --x {self.subgraph_id(j)}"
-                          for i, j in self.sub_graph_links]
-        links = [f"{self.node_tag(i)} --- {self.node_tag(j)}" for n, (i, j) in enumerate(self.links)]
         node_styles = [f"style {self.node_fmt(i)} {v.render_style()}"
                        for i, v in self.node_styles.items()
                        ] if self.node_styles is not None else []
         line_style = "linkStyle default stroke-width:2px,fill:none,stroke:#33333333"
 
-        return rows((base, rows(subgraph_strs), rows(subgraph_links), rows(links), rows(node_styles), line_style))
+        links = [l.render(self) for l in self.links]
+        return rows((theme, base, rows(subgraph_strs), rows(links), rows(node_styles), line_style))
 
     def html(self) -> str:
         return f"""

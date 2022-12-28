@@ -43,7 +43,8 @@ ruleset = parse_ruleset(
 )
 saturate(g, ruleset)
 g.to_mermaid().view_()
+[print(x.display) for x in g.root_nodes]
 
 # test equality
-example2 = "(+ (* a b) (* b 2))"
+example2 = "(+ (* a b) (* 2 b))"
 assert check_equality(parse(example2), g)
