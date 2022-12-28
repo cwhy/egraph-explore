@@ -59,38 +59,42 @@ class EGraph:
         egraph.root_class = len(egraph.classes)
         return egraph
 
-    def match_class_helper(self, class_id: int, to_match: AstP, symbol: Symbols) -> Optional[MatchResult]:
+    def match_class_helper(self, class_id: int, to_match: AstP, session_symbols: Symbols) -> Optional[MatchResult]:
         # Only return the first one matched
         for node in self.classes[class_id]:
-            result = self.match_node_helper(node, to_match, symbol)
+            result = self.match_node_helper(node, to_match, session_symbols)
             if result is not None:
                 return MatchResult(node, result)
         else:
             return None
 
-    def match_node_helper(self, node: AstP, to_match: AstP, symbol: Symbols) -> Optional[Symbols]:
+    # Symbols: contains symbol <-> Ast information
+    # session_symbols: symbols that are matched and confirmed in the current match session
+    def match_node_helper(self, node: AstP, to_match: AstP, session_symbols: Symbols) -> Optional[Symbols]:
         if isinstance(to_match, AstParent):
             if not isinstance(node, AstParent):
                 return None
             else:
                 for arg1, arg2 in zip(node.args, to_match.args):
                     assert arg1 in self.registry
-                    result = self.match_class_helper(self.registry[arg1], arg2, symbol)
+                    result = self.match_class_helper(self.registry[arg1], arg2, session_symbols)
                     if result is not None:
-                        symbol |= result.symbols
+                        session_symbols |= result.symbols
                     else:
                         return None
                 else:
-                    return symbol
+                    return session_symbols
         else:
             if isinstance(to_match, Symbol):
                 # symbol is not there or has same value
-                if node == symbol.from_symbol.get(to_match, node):
+                if node == session_symbols.from_symbol.get(to_match, node):
                     return Symbols.from_from_symbol({to_match: node})
                 else:
                     return None
             elif isinstance(node, AstParent):
                 return None
+            elif isinstance(node, Number) and isinstance(to_match, Symbol):
+                return Symbols.from_from_symbol({to_match: node})
             else:
                 if to_match != node:
                     if to_match in self.registry:
