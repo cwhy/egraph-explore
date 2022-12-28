@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from egraph import EGraph
+from match_egraph import match_rule
 from mini_lisp.core import parse
 from mini_lisp.rules import RuleSet, parse_ruleset, trim_ruleset
 
@@ -10,7 +11,7 @@ def all_match_(egraph: EGraph, rule_set: RuleSet, visualize_lvl: int =0, max_ite
     h = hash(egraph)
     nh = None
     while nh != h:
-        results = list(res for rule in rule_set for res in egraph.match_rule(rule))
+        results = list(res for rule in rule_set for res in match_rule(egraph, rule))
         if len(results) == 0:
             break
         for result in results:

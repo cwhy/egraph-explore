@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from itertools import chain
-from typing import NamedTuple, FrozenSet, Tuple, List, Dict, Set, Optional
+from typing import Dict, Set, Optional
 
-from mini_lisp.core import RawLeaves, Symbols
-from mini_lisp.core_types import AstNode, Number, AstParent, Variable, Symbol
-from mini_lisp.patterns import MatchResult
-from mini_lisp.rules import Rule, RuleMatchResult, OPs
 from graph_visualization import MermaidGraph, NodeStyle, Linkable, Link, LinkableType
+from mini_lisp.core import RawLeaves
+from mini_lisp.core_types import AstNode, Number, AstParent, Variable
+from mini_lisp.rules import RuleMatchResult, OPs
 from utils.misc import get_rounded_num
 
 AstP = AstNode[RawLeaves]
@@ -33,15 +31,14 @@ class EGraph:
         else:
             return self.classes[self.root_class].copy()
 
- #    def __contains__(self, item: AstP) -> bool:
- #        if item in self.classes[self.root_class]:
- #            return True
- #        elif not isinstance(item, AstParent):
- #            return False
- #        else:
- #            for arg in item.args:
- #                if arg in self.registry:
-
+    #    def __contains__(self, item: AstP) -> bool:
+    #        if item in self.classes[self.root_class]:
+    #            return True
+    #        elif not isinstance(item, AstParent):
+    #            return False
+    #        else:
+    #            for arg in item.args:
+    #                if arg in self.registry:
 
     def attach_ast_node_(self, ast: AstP) -> None:
         if ast not in self.registry:
@@ -68,62 +65,6 @@ class EGraph:
         EGraph.attach_ast_(ast, egraph)
         egraph.root_class = len(egraph.classes)
         return egraph
-
-    def match_class_helper(self, class_id: int, to_match: AstP, session_symbols: Symbols) -> Optional[MatchResult]:
-        # Only return the first one matched
-        for node in self.classes[class_id]:
-            result = self.match_node_helper(node, to_match, session_symbols)
-            if result is not None:
-                return MatchResult(node, result)
-        else:
-            return None
-
-    # Symbols: contains symbol <-> Ast information
-    # session_symbols: symbols that are matched and confirmed in the current match session
-    def match_node_helper(self, node: AstP, to_match: AstP, session_symbols: Symbols) -> Optional[Symbols]:
-        if isinstance(to_match, AstParent):
-            if not isinstance(node, AstParent):
-                return None
-            else:
-                for arg1, arg2 in zip(node.args, to_match.args):
-                    assert arg1 in self.registry
-                    result = self.match_class_helper(self.registry[arg1], arg2, session_symbols)
-                    if result is not None:
-                        session_symbols |= result.symbols
-                    else:
-                        return None
-                else:
-                    return session_symbols
-        else:
-            if isinstance(to_match, Symbol):
-                # symbol is not there or has same value
-                if node == session_symbols.from_symbol.get(to_match, node):
-                    return Symbols.from_from_symbol({to_match: node})
-                else:
-                    return None
-            elif isinstance(node, AstParent):
-                return None
-            elif isinstance(node, Number) and isinstance(to_match, Symbol):
-                return Symbols.from_from_symbol({to_match: node})
-            else:
-                if to_match != node:
-                    if to_match in self.registry:
-                        assert node in self.registry
-                        if self.registry[to_match] != self.registry[node]:
-                            return None
-                        else:
-                            return Symbols.empty()
-                    else:
-                        return None
-                else:
-                    return Symbols.empty()
-
-    def match_node(self, node: AstP, rule: Rule) -> Optional[RuleMatchResult]:
-        result = self.match_node_helper(node, rule.lhs, Symbols.empty())
-        return rule.apply(MatchResult(node, result)) if result is not None else None
-
-    def match_rule(self, rule: Rule) -> FrozenSet[RuleMatchResult]:
-        return frozenset(filter(None, (self.match_node(node, rule) for node in self.registry)))
 
     def merge_class_(self, from_class_id: int, to_class_id: int) -> None:
         to_class = self.classes.pop(to_class_id)
