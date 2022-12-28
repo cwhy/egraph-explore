@@ -31,7 +31,7 @@ class EGraph:
         if self.root_class is None:
             raise RuntimeError("Graph not initialized: Root class is not set")
         else:
-            return self.classes[self.root_class]
+            return self.classes[self.root_class].copy()
 
     def attach_ast_node_(self, ast: AstP) -> None:
         # TODO this is not efficient
