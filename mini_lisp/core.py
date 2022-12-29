@@ -91,6 +91,9 @@ class Ast(NamedTuple):
     def display(self) -> str:
         return tree_parent_display(self)
 
+    def __repr__(self) -> str:
+        return f"{self.args[0].name}({','.join([a.name for a in self.args[1:]])})\ttype={self.type}"
+
 
 def tokenize(s: str) -> List[str]:
     return s.replace("(", " ( ").replace(")", " ) ").split()

@@ -14,7 +14,7 @@ def print_result(fn):
 
 
 @print_result
-def euqal_ast_class_node(graph: EGraph, class_node: AstP, to_test: AstP) -> bool:
+def equal_ast_class_node(graph: EGraph, class_node: AstP, to_test: AstP) -> bool:
     print(f"checking \n {class_node.display}\n == \n {to_test.display}")
     if isinstance(to_test, AstParent):
         if not isinstance(class_node, AstParent):
@@ -42,7 +42,7 @@ def euqal_ast_class_node(graph: EGraph, class_node: AstP, to_test: AstP) -> bool
 def equal_ast_node(graph: EGraph, node: AstP, to_test: AstP) -> bool:
     class_id = graph.registry[node]
     for class_node in graph.classes[class_id]:
-        if euqal_ast_class_node(graph, class_node, to_test):
+        if equal_ast_class_node(graph, class_node, to_test):
             return True
     else:
         return False

@@ -33,23 +33,23 @@ def saturate(egraph: EGraph, rule_set: RuleSet, visualize_lvl: int = 0, max_iter
 def check_equality(ast: AstP, egraph: EGraph):
     return equal_ast(egraph, ast)
 
+if __name__ == "__main__":
+    example = "(* (+ a 2) b)"
+    g = EGraph.from_ast(parse(example))
+    g.to_mermaid().view_()
 
-example = "(* (+ a 2) b)"
-g = EGraph.from_ast(parse(example))
-g.to_mermaid().view_()
+    ruleset = parse_ruleset(
+        """
+        (* (+ x y) z) == (+ (* x z) (* y z))
+        (* x y) == (* y x)
+        (+ x y) == (+ y x)
+        """, trim=True
+    )
+    saturate(g, ruleset)
+    g.to_mermaid().view_()
+    [print(x.display) for x in g.root_nodes]
 
-ruleset = parse_ruleset(
-    """
-    (* (+ x y) z) == (+ (* x z) (* y z))
-    (* x y) == (* y x)
-    (+ x y) == (+ y x)
-    """, trim=True
-)
-saturate(g, ruleset)
-g.to_mermaid().view_()
-[print(x.display) for x in g.root_nodes]
-
-# test equality
-example2 = "(+ (* a b) (* 2 b))"
-assert check_equality(parse(example2), g)
-assert not check_equality(parse("(+ (* a b) (* 3 b))"), g)
+    # test equality
+    example2 = "(+ (* a b) (* 2 b))"
+    assert check_equality(parse(example2), g)
+    assert not check_equality(parse("(+ (* a b) (* 3 b))"), g)
