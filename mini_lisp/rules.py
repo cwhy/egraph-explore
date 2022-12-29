@@ -41,7 +41,7 @@ class Rule(NamedTuple):
         ast_r = parse(r)
         symbol_keys = get_symbols(ast_l).to_symbol.keys() | get_symbols(ast_r).to_symbol.keys()
         symbol_keys -= OPs
-        symbol_keys -= set(custom_ops)
+        symbol_keys -= frozenset(Variable(op) for op in custom_ops)
         to_symbol = {v: Symbol(i) for i, v in enumerate(symbol_keys)}
         symbols = Symbols.from_to_symbol(to_symbol)
         return Rule(
@@ -79,7 +79,7 @@ def parse_ruleset(rules_str: str, trim: bool = False, custom_ops: Iterable[str] 
         elif "==" in row:
             eq_rules = row.split('==')
             rules.add(Rule.parse(*eq_rules, custom_ops))
-            rules.add(Rule.parse(*reversed(row.split('==')), custom_ops))
+            rules.add(Rule.parse(*reversed(eq_rules), custom_ops))
     if trim:
         return trim_ruleset(rules)
     else:

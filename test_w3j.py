@@ -11,9 +11,10 @@ g = EGraph.from_ast(parse(example))
 rset = parse_ruleset(
     """
     (w3j l1 l2 l3 s1 s2 s3) == (w3j l2 l3 l1 s2 s3 s1)
-    (w3j l1 l2 l3 s1 s2 s3) => (* (P l2 l1 l3) (w3j l2 l1 l3 s2 s1 s3))
+    (w3j l1 l2 l3 s1 s2 s3) == (* (P l2 l1 l3) (w3j l2 l1 l3 s2 s1 s3))
     """, 
     custom_ops=['w3j', 'P'], trim=True
 )
+[print(r.display) for r in rset]
 saturate(g, rset)
 g.to_mermaid().view_()
