@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Set, Optional
 
+from equal_egraph import equal_ast
 from graph_visualization import MermaidGraph, NodeStyle, Linkable, Link, LinkableType
 from mini_lisp.core import RawLeaves
 from mini_lisp.core_types import AstNode, Number, AstParent, Variable
@@ -31,14 +32,8 @@ class EGraph:
         else:
             return self.classes[self.root_class].copy()
 
-    #    def __contains__(self, item: AstP) -> bool:
-    #        if item in self.classes[self.root_class]:
-    #            return True
-    #        elif not isinstance(item, AstParent):
-    #            return False
-    #        else:
-    #            for arg in item.args:
-    #                if arg in self.registry:
+    def __contains__(self, item: AstP) -> bool:
+        return equal_ast(item, self.root_nodes)
 
     def attach_ast_node_(self, ast: AstP) -> None:
         if ast not in self.registry:
