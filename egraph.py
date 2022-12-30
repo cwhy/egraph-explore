@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Set, Optional
 
-from equal_egraph import equal_ast
 from graph_visualization import MermaidGraph, NodeStyle, Linkable, Link, LinkableType
 from mini_lisp.core import RawLeaves
 from mini_lisp.core_types import AstNode, Number, AstParent, Variable
@@ -31,9 +30,6 @@ class EGraph:
             raise RuntimeError("Graph not initialized: Root class is not set")
         else:
             return self.classes[self.root_class].copy()
-
-    def __contains__(self, item: AstP) -> bool:
-        return equal_ast(item, self.root_nodes)
 
     def attach_ast_node_(self, ast: AstP) -> None:
         if ast not in self.registry:
