@@ -35,6 +35,8 @@ def match_node_helper(graph: EGraph, node: AstP, to_match: AstP, session_symbols
         if not isinstance(node, AstParent):
             return None
         else:
+            if len(node.args) != len(to_match.args):
+                return None
             for arg1, arg2 in zip(node.args, to_match.args):
                 assert arg1 in graph.registry
                 result = match_class_helper(graph, graph.registry[arg1], arg2, session_symbols)

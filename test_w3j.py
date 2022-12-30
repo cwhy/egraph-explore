@@ -16,10 +16,11 @@ rset = parse_ruleset(
     (w3j l1 l2 l3 s1 s2 s3) == (* P (w3j l2 l1 l3 s2 s1 s3))
     (* (w3j l1 l2 l3 s1 s2 s3) (w3j l1 l2 l3 s1p s2p s3p)) == (* (wigd l1 s1 s1p) (wigd l2 s2 s2p) (wigd l3 s3 s3p))
     (* (* a b) c) == (* a (* b c))
-    (* a b) == (* b c)
+    (* a b) == (* b a)
     """, 
     custom_ops=['w3j', 'P', 'wigd'], trim=True
 )
 [print(r.display) for r in rset]
-saturate(g, rset)
+print("saturating...")
+saturate(g, rset, visualize_lvl=1)
 g.to_mermaid().view_()

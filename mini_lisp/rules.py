@@ -8,6 +8,7 @@ from mini_lisp.tree_utils import tree_replace, tree_display_short
 OPs = frozenset(Variable(x) for x in {'+', '-', '*', '/', '^', '<<'})
 
 AstP = AstNode[RawLeaves]
+DEBUG = False
 
 
 class RuleMatchResult(NamedTuple):
@@ -51,6 +52,16 @@ class Rule(NamedTuple):
         )
 
     def apply(self, match_result: MatchResult) -> RuleMatchResult:
+        if len(match_result.symbols.from_symbol) != 0 and DEBUG:
+            print("result:")
+            print(match_result.node.display)
+            print("symbols:")
+            print(match_result.symbols)
+            print("rule: ")
+            print(self.display)
+            print("after replace")
+            print(tree_replace(self.rhs, match_result.symbols.from_symbol, Symbol, Ast).display)
+            print("end result")
         return RuleMatchResult(
             index=match_result.node,
             to=tree_replace(self.rhs, match_result.symbols.from_symbol, Symbol, Ast)

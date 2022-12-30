@@ -33,6 +33,7 @@ def saturate(egraph: EGraph, rule_set: RuleSet, visualize_lvl: int = 0, max_iter
 def check_equality(ast: AstP, egraph: EGraph):
     return equal_ast(egraph, ast)
 
+
 if __name__ == "__main__":
     example = "(* (+ a 2) b)"
     g = EGraph.from_ast(parse(example))

@@ -31,15 +31,6 @@ class EGraph:
         else:
             return self.classes[self.root_class].copy()
 
-    #    def __contains__(self, item: AstP) -> bool:
-    #        if item in self.classes[self.root_class]:
-    #            return True
-    #        elif not isinstance(item, AstParent):
-    #            return False
-    #        else:
-    #            for arg in item.args:
-    #                if arg in self.registry:
-
     def attach_ast_node_(self, ast: AstP) -> None:
         if ast not in self.registry:
             # TODO this is not efficient
